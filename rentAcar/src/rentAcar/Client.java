@@ -21,7 +21,7 @@ public class Client extends Entity {
 		point = newpoint;
 	}
 	
-	public void drop(Point newpoint) {
+	public void drop() {
 		Board.removeClient(this);
 	}
 

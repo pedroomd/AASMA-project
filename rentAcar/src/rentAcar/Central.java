@@ -39,11 +39,6 @@ public class Central {
     	this.requests.remove(r);
     }
 
-    public void getCarParking(Point point){
-        for(CarParking park: carParkings){
-            if()
-        }
-    }
 
     public List<CarParking> getAvailableCarParkings(){
         List<CarParking> carParkingsAvailable = new ArrayList<>();
