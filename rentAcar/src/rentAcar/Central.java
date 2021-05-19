@@ -40,9 +40,12 @@ public class Central {
     }
 
     public void getCarParking(Point point){
-        for(CarParking park: carParkings){
-            if()
-        }
+
+    }
+
+    public void setCarkParkingOccupied(CarParking park){
+        int index = this.carParkings.indexOf(park);
+        this.carParkings.get(index).changeOccupied();
     }
 
     public List<CarParking> getAvailableCarParkings(){

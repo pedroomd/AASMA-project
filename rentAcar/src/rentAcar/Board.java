@@ -15,7 +15,7 @@ public class Board {
 
 	private static Block[][] board;
 	private static Entity[][] objects;
-	private static int max_clients = 10;
+	private static int max_clients = 4;
 
 	private static Central central;
 	private static List<Car> cars;
@@ -121,7 +121,6 @@ public class Board {
 	    public void run() {
 	    	while(true){
 
-
 	    		step();
 				try {
 					sleep(time);
@@ -155,18 +154,29 @@ public class Board {
 	
 	public static void step() {
 		removeObjects();
-		//for(Car a : cars) a.agentDecision();
 		if(clients.size() < max_clients){
 			//50% of a new client
 			if(rand.nextBoolean()){
 				int x = rand.nextInt(15);
 				int y = rand.nextInt(15);
-				if( board[x][y].shape.equals(Shape.free)){
+				System.out.println("point client -> " + x + " " + y);
+				
+
+				if(board[x][y].shape.equals(Shape.free) && getEntity(new Point(x,y)) == null){
 					Request request = new Request(20, new Point(x,y));
 					central.pushRequest(request);
 					Client client = new Client(new Point(x,y), Color.BLACK, request);
 					clients.add(client);
 					objects[x][y] = client;
+
+					System.out.println("OBJECTS");
+					for(int i = 0; i < objects[0].length; i++){
+						for(int j = 0; j < objects[1].length;j++){
+							if(objects[i][j] != null){
+								System.out.println(i + " " + j);
+							}
+						}
+					} 
 				}
 			}
 		}
@@ -208,7 +218,7 @@ public class Board {
 	
 	public static void removeClient(Entity entity) {
 		clients.remove(entity);
-		removeEntity(entity.point);
+		//removeEntity(entity.point);
 		GUI.removeObject(entity);
 	}
 }
