@@ -39,6 +39,10 @@ public class Central {
     	this.requests.remove(r);
     }
 
+    public void setCarkParkingOccupied(CarParking park){
+        int index = this.carParkings.indexOf(park);
+        this.carParkings.get(index).changeOccupied();
+    }
 
     public List<CarParking> getAvailableCarParkings(){
         List<CarParking> carParkingsAvailable = new ArrayList<>();

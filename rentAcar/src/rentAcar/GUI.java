@@ -64,8 +64,8 @@ public class GUI extends JFrame {
 		    			case 180:g.fillPolygon(new int[]{10, 40, 25}, new int[]{7, 7, 37}, 3); break;
 		    			default: g.fillPolygon(new int[]{8, 38, 38}, new int[]{22, 7, 37}, 3); 
 		    		}
-					g.setColor(Color.RED);
-					g.drawString("C", 15, 27);
+					//g.setColor(Color.RED);
+					//g.drawString("C", 15, 27);
 				}
             }
         }

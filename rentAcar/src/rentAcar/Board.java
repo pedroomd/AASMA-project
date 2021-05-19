@@ -121,7 +121,6 @@ public class Board {
 	    public void run() {
 	    	while(true){
 
-
 	    		step();
 				try {
 					sleep(time);
@@ -166,6 +165,15 @@ public class Board {
 					Client client = new Client(new Point(x,y), Color.BLACK, request);
 					clients.add(client);
 					objects[x][y] = client;
+
+					System.out.println("OBJECTS");
+					for(int i = 0; i < objects[0].length; i++){
+						for(int j = 0; j < objects[1].length;j++){
+							if(objects[i][j] != null){
+								System.out.println(i + " " + j);
+							}
+						}
+					} 
 				}
 			}
 		}
@@ -208,7 +216,6 @@ public class Board {
 	
 	public static void removeClient(Entity entity) {
 		clients.remove(entity);
-		removeEntity(entity.point);
 		GUI.removeObject(entity);
 	}
 }

@@ -3,6 +3,9 @@ package rentAcar;
 import java.awt.Color;
 import java.awt.Point;
 import java.util.List;
+
+import javax.swing.text.Style;
+
 import java.util.ArrayList;
 
 import rentAcar.Agent.Action;
@@ -39,8 +42,8 @@ public class Car extends Entity {
     
     public void agentReactiveDecision() {
 	  	ahead = aheadPosition(this.point, this.direction);
-	  	if(isBorder() || isOcean()) rotateRandomly();
-		else if(hasDestPoint()) nextPosition();
+		
+		if(hasDestPoint()) nextPosition();
 		else if(isCharging() && !hasRequest()) charge();
 		else if(lowBattery() && this.state == State.nonOccupied) searchCarParking();
 	  	else if(distanceComplete() && this.state == State.occupied ) dropClient();
@@ -104,7 +107,7 @@ public class Car extends Entity {
 	public void charge(){
 		if(this.battery == maxBattery){
 			this.state = State.nonOccupied;
-			park.changeOccupied();
+			this.central.setCarkParkingOccupied(park);
 			park = null;
 		} 
 		else this.battery += 10;
@@ -132,8 +135,8 @@ public class Car extends Entity {
 
 	public void nextPosition(){
 
-		int dx = destPoint.x - point.x;
-		int dy = destPoint.y - point.y;
+        int dx = destPoint.x - point.x;
+        int dy = destPoint.y - point.y;
 
 		int nextX = point.x + Integer.signum(dx);
 		int nextY = point.y + Integer.signum(dy);
@@ -232,12 +235,12 @@ public class Car extends Entity {
 				closestCarParking = park;
 			}
 		}
-		
-		if(closestCarParking != null) {
+
+		if(closestCarParking != null){
+			this.state = State.needCharger;
 			destPoint = closestCarParking.point;
 			this.park = closestCarParking;
-			this.park.changeOccupied();
-			this.state = State.needCharger;
+			this.central.setCarkParkingOccupied(closestCarParking);
 		}
 
 		
@@ -248,11 +251,11 @@ public class Car extends Entity {
     }
 
 	public void getRequest() {
-		List<Request> requestsAvailable =  central.getRequests();
-		List<Car> cars = central.getCars();
-		boolean closestCar = true;
-		
-		if(this.state == State.nonOccupied) {
+		if(state.equals(State.nonOccupied)){
+			List<Request> requestsAvailable =  central.getRequests();
+			List<Car> cars = central.getCars();
+			boolean closestCar = true;
+
 			for(Request r : requestsAvailable) {
 				int minDistance = manhattanDistance(this.point, r.getClientPoint());
 				
