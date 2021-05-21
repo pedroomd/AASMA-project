@@ -194,13 +194,6 @@ public class Car extends Entity {
 			state = State.occupied;
 		}
 	}
-	
-	private void doRandMov() {
-		int rand = random.nextInt(3) + 1;
-		this.direction = (this.direction + (rand * 90)) % 360;
-		ahead = aheadPosition(this.point, this.direction);
-		if(isFreeCell()) moveAhead();
-	}
 
 	public void goToWorkshop(){
 	
@@ -251,33 +244,43 @@ public class Car extends Entity {
 		Point moveInX = new Point(nextX, point.y);
 		Point moveInY = new Point(point.x, nextY);
 		
+		int rotateRight = (direction+90)%360; 
+		int rotateLeft = (direction-90+360)%360;
+		
+		Point aheadRight = aheadPosition(this.point, rotateRight);
+		Point aheadLeft = aheadPosition(this.point, rotateLeft);
+		Point aheadBehind = aheadPosition(aheadLeft, rotateLeft);
+		
 		
 		if (destPoint.equals(ahead)) completeDest();
 		
+		else if (destPoint.equals(aheadRight)) {
+			rotateRight();
+			completeDest();
+		}
+		
+		else if (destPoint.equals(aheadLeft)) {
+			rotateLeft();
+			completeDest();
+		}
+		
+		else if (destPoint.equals(aheadBehind)) {
+			rotateLeft();
+			rotateLeft();
+			completeDest();
+		}
+
 		else if ((moveInX.equals(ahead) || moveInY.equals(ahead)) && isFreeCell()) moveAhead();
 		
 		else {
-			int rotateRight = (direction+90)%360; 
-			int rotateLeft = (direction-90+360)%360;
+			if(moveInX.equals(aheadRight) || moveInY.equals(aheadRight)) {
+				rotateRight();
+				if(isFreeCell()) moveAhead();
+			}
 			
-			Point aheadRight = aheadPosition(this.point, rotateRight);
-			Point aheadLeft = aheadPosition(this.point, rotateLeft);
-			
-			if(random.nextInt(5) != 0) {
-
-				if(moveInX.equals(aheadRight) || moveInY.equals(aheadRight)) {
-					rotateRight();
-					if (destPoint.equals(ahead)) completeDest();
-					else if(isFreeCell()) moveAhead();
-				}
-				
-				else if (moveInX.equals(aheadLeft) || moveInY.equals(aheadLeft)) {	
-					rotateLeft();
-					if (destPoint.equals(ahead)) completeDest();
-					else if(isFreeCell()) moveAhead();
-				}
-				
-				else doRandMov();
+			else if (moveInX.equals(aheadLeft) || moveInY.equals(aheadLeft)) {	
+				rotateLeft();
+				if(isFreeCell()) moveAhead();
 			}
 			
 			else doRandMov();
