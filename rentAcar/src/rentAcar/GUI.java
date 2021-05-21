@@ -20,8 +20,6 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.JTextPane;
 
-import rentAcar.Block.Shape;
-
 
 public class GUI extends JFrame {
 
@@ -52,11 +50,6 @@ public class GUI extends JFrame {
 
 				}
 
-				else if (entity instanceof CarParking) {
-					g.setColor(Color.WHITE);
-					g.drawString("P", 15, 25);
-					
-				}
 				else{
 					switch(((Car)entity).direction) {
 		    			case 0:  g.fillPolygon(new int[]{7, 22, 37}, new int[]{37, 7, 37}, 3); break;
@@ -64,8 +57,6 @@ public class GUI extends JFrame {
 		    			case 180:g.fillPolygon(new int[]{10, 40, 25}, new int[]{7, 7, 37}, 3); break;
 		    			default: g.fillPolygon(new int[]{8, 38, 38}, new int[]{22, 7, 37}, 3); 
 		    		}
-					//g.setColor(Color.RED);
-					//g.drawString("C", 15, 27);
 				}
             }
         }
@@ -73,7 +64,7 @@ public class GUI extends JFrame {
 
 	public GUI() {
 		//image = new ImageIcon(getClass().getResource("charger.png"));
-		setTitle("Call-A-Car - Autonomous Solutions");		
+		setTitle("Rent-A-Car - Autonomous Solutions");		
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setLayout(null);
 		setSize(655, 725);

@@ -2,7 +2,6 @@ package rentAcar;
 
 import java.util.List;
 import java.util.ArrayList;
-import java.awt.Point;
 
 public class Central {
     private List<CarParking> carParkings;
@@ -31,6 +30,15 @@ public class Central {
         return this.cars;
     }
     
+    public List<CarParking> getCarParkings(){
+        return this.carParkings;
+    }
+    
+    public CarParking getCarParking(CarParking park){
+        int index = this.carParkings.indexOf(park);
+        return this.carParkings.get(index);
+    }
+    
     public void pushRequest(Request r) {
     	this.requests.add(r);
     }
@@ -42,6 +50,11 @@ public class Central {
     public void setCarkParkingOccupied(CarParking park){
         int index = this.carParkings.indexOf(park);
         this.carParkings.get(index).changeOccupied();
+    }
+    
+    public void setCarkParkingHasArrived(CarParking park, boolean bool){
+        int index = this.carParkings.indexOf(park);
+        this.carParkings.get(index).setHasArrived(bool);
     }
 
     public List<CarParking> getAvailableCarParkings(){

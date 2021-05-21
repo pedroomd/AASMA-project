@@ -4,18 +4,13 @@ import java.awt.Color;
 import java.awt.Point;
 import java.util.List;
 
-import javax.swing.text.Style;
-
-import java.util.ArrayList;
-
-import rentAcar.Agent.Action;
 import rentAcar.Block.Shape;
 
 public class Car extends Entity {
 
 	public enum State {charging, startRequest, occupied, nonOccupied, needCharger }
 	public static int threshold = 30;
-	public static int maxBattery = 1550000;
+	public static int maxBattery = 150;
 	public State state = State.nonOccupied;
 	public int direction = 90;
 	public int battery = maxBattery;
@@ -41,16 +36,24 @@ public class Car extends Entity {
 	
     
     public void agentReactiveDecision() {
+    	
 	  	ahead = aheadPosition(this.point, this.direction);
+	  	changeCarColor();
 		
-		if(hasDestPoint()) nextPosition();
-		else if(isCharging() && !hasRequest()) charge();
+		if(isCharging()) charge();
+		else if(hasDestPoint()) nextPosition();
 		else if(lowBattery() && this.state == State.nonOccupied) searchCarParking();
 	  	else if(distanceComplete() && this.state == State.occupied ) dropClient();
 	  	else if(!isFreeCell()) rotateRandomly();
-	  	else if(random.nextInt(5) == 0) rotateRandomly();
+	  	else if(random.nextInt(10) == 0) rotateRandomly();
 	  	else moveAhead();
   	}
+    
+    public void changeCarColor(){
+        if(battery == 5) this.color = Color.RED;
+        else if (battery >= threshold) this.color = Color.pink;
+        else if(battery <= threshold)this.color = color.yellow;
+    }
     
     public boolean isFreeCell() {
 
@@ -81,8 +84,8 @@ public class Car extends Entity {
 	}
 
 	public boolean isCarParking() {
-		Entity entity = Board.getEntity(ahead);
-		return entity!=null && entity instanceof CarParking; 
+		Block block = Board.getBlock(ahead);
+		return block.shape.equals(Shape.carParking); 
 	}
 
 	public boolean hasRequest(){
@@ -105,11 +108,21 @@ public class Car extends Entity {
 	}
 
 	public void charge(){
-		if(this.battery == maxBattery){
-			this.state = State.nonOccupied;
+		
+		if(this.battery >= threshold && this.central.getCarParking(this.park).isOccupied()) {
 			this.central.setCarkParkingOccupied(park);
+		}
+		
+		if(hasRequest()) {
+			this.state = State.startRequest;
+			park = null;
+		}
+		
+		else if(this.battery >= maxBattery || central.getCarParking(this.park).getHasArrived()){
+			this.state = State.nonOccupied;
 			park = null;
 		} 
+		
 		else this.battery += 10;
 		
 	}
@@ -132,6 +145,34 @@ public class Car extends Entity {
 		direction = (direction-90+360)%360;
 		ahead = aheadPosition(this.point, this.direction);
 	}
+	
+	
+	private void completeDest() {
+		if(this.state.equals(State.needCharger) && isCarParking()){
+			if(Board.getEntity(ahead) == null) {
+				destPoint = null;
+				moveAhead();
+				this.state = State.charging;
+				this.central.setCarkParkingHasArrived(this.park, false);
+			}
+			
+			else {
+				this.central.setCarkParkingHasArrived(this.park, true);
+			}
+		}
+		else if(this.state.equals(State.startRequest) && isClient()){
+			destPoint = null;
+			grabClient();
+			state = State.occupied;
+		}
+	}
+	
+	private void doRandMov() {
+		int rand = random.nextInt(3) + 1;
+		this.direction = (this.direction + (rand * 90)) % 360;
+		ahead = aheadPosition(this.point, this.direction);
+		if(isFreeCell()) moveAhead();
+	}
 
 	public void nextPosition(){
 
@@ -145,18 +186,7 @@ public class Car extends Entity {
 		Point moveInY = new Point(point.x, nextY);
 		
 		
-		if (destPoint.equals(ahead)) {
-			if(this.state.equals(State.needCharger) && isCarParking()){
-				destPoint = null;
-				moveAhead();
-				this.state = State.charging;
-			}
-			else if(this.state.equals(State.startRequest) && isClient()){
-				destPoint = null;
-				grabClient();
-				state = State.occupied;
-			}
-		}
+		if (destPoint.equals(ahead)) completeDest();
 		
 		else if ((moveInX.equals(ahead) || moveInY.equals(ahead)) && isFreeCell()) moveAhead();
 		
@@ -166,23 +196,26 @@ public class Car extends Entity {
 			
 			Point aheadRight = aheadPosition(this.point, rotateRight);
 			Point aheadLeft = aheadPosition(this.point, rotateLeft);
+			
+			if(random.nextInt(5) != 0) {
 
-			if(moveInX.equals(aheadRight) || moveInY.equals(aheadRight)) rotateRight();
-			
-			else if(moveInX.equals(aheadLeft) || moveInY.equals(aheadLeft)) rotateLeft();
-			
-			else {
-				if(random.nextBoolean()) {
+				if(moveInX.equals(aheadRight) || moveInY.equals(aheadRight)) {
 					rotateRight();
-					if(isFreeCell()) moveAhead();	
+					if (destPoint.equals(ahead)) completeDest();
+					else if(isFreeCell()) moveAhead();
 				}
 				
-				else {
+				else if (moveInX.equals(aheadLeft) || moveInY.equals(aheadLeft)) {	
 					rotateLeft();
-					if(isFreeCell()) moveAhead();
+					if (destPoint.equals(ahead)) completeDest();
+					else if(isFreeCell()) moveAhead();
 				}
+				
+				else doRandMov();
 			}
-		} 
+			
+			else doRandMov();
+		}
 	}
 	
 	/* Move agent forward */
@@ -216,8 +249,9 @@ public class Car extends Entity {
 	}
 	
 	public void dropClient() {
-		client.drop();
-	    client = null;
+		this.client.drop();
+	    this.client = null;
+	    this.request = null;
 	    this.state = State.nonOccupied;
 	}
 
@@ -228,15 +262,15 @@ public class Car extends Entity {
 		int minDistance = Integer.MAX_VALUE;
 		
 		//calculate the closest car park
-		for(CarParking park: carParkingsAvailable){
+		for(CarParking park: carParkingsAvailable) {
 			int distance = manhattanDistance(this.point, park.point);
 			if(distance < minDistance){
 				minDistance = distance;
 				closestCarParking = park;
 			}
 		}
-
-		if(closestCarParking != null){
+		
+		if(closestCarParking != null) {
 			this.state = State.needCharger;
 			destPoint = closestCarParking.point;
 			this.park = closestCarParking;
@@ -251,11 +285,11 @@ public class Car extends Entity {
     }
 
 	public void getRequest() {
-		if(state.equals(State.nonOccupied)){
-			List<Request> requestsAvailable =  central.getRequests();
-			List<Car> cars = central.getCars();
-			boolean closestCar = true;
-
+		List<Request> requestsAvailable =  central.getRequests();
+		List<Car> cars = central.getCars();
+		boolean closestCar = true;
+		
+		if(this.state == State.charging || this.state == State.nonOccupied) {
 			for(Request r : requestsAvailable) {
 				int minDistance = manhattanDistance(this.point, r.getClientPoint());
 				
@@ -270,7 +304,7 @@ public class Car extends Entity {
 					}
 					
 					if(closestCar) {
-						this.state = State.startRequest;
+						if(this.state != State.charging) this.state = State.startRequest;
 						request = r;
 						central.popRequest(r);
 						destPoint = r.getClientPoint();
