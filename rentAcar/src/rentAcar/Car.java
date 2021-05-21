@@ -135,7 +135,7 @@ public class Car extends Entity {
 	public void charge(){
 		
 		if(this.battery >= threshold && this.central.getCarParking(this.park).isOccupied()) {
-			this.central.setCarParkingOccupied(park, false);
+			this.central.setCarkParkingOccupied(park);
 		}
 		
 		if(hasRequest()) {
@@ -210,8 +210,7 @@ public class Car extends Entity {
 			learn();
 		}
 		else if(this.park != null){
-			this.central.setCarParkingOccupied(this.park, false);
-			this.central.setCarParkingHasArrived(this.park, false);
+			this.central.setCarParkingOccupied(this.park);
 			this.park = null;
 		}
 		this.destPoint = null;
@@ -377,7 +376,7 @@ public class Car extends Entity {
 			this.state = State.needCharger;
 			destPoint = closestCarParking.point;
 			this.park = closestCarParking;
-			this.central.setCarParkingOccupied(closestCarParking, true);
+			this.central.setCarParkingOccupied(closestCarParking);
 		}
 
 		
