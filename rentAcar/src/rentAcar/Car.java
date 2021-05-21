@@ -10,9 +10,12 @@ public class Car extends Entity {
 
 
 	//learning variable
-	public enum Result { succeed, requestFailure, clientFailure}
+	public enum Result { succeed, requestFailure, clientFailure, noResult}
 	public int batteryWasted;
 	public double learningRate = 0.1;
+	public Result result = Result.noResult;
+	public int threshold_for_trip;
+
 
 	//
 	public enum State {charging, startRequest, occupied, nonOccupied, needCharger, noBattery }
@@ -59,11 +62,12 @@ public class Car extends Entity {
 		if(isCharging()) charge();
 		else if(hasDestPoint()) nextPosition();
 		else if(lowBattery() && this.state == State.nonOccupied) searchCarParking();
-	  	else if(distanceComplete() && this.state == State.occupied ){ dropClient(); learn();}
+	  	else if(distanceComplete() && this.state == State.occupied ){ dropClient(); this.result = Result.succeed;} //learn();}
 		else if(noBattery()) goToWorkshop();
 	  	else if(!isFreeCell()) rotateRandomly();
 	  	else if(random.nextInt(10) == 0) rotateRandomly();
 	  	else moveAhead();
+		learn();
   	}
     
     public void changeCarColor(){
@@ -178,6 +182,7 @@ public class Car extends Entity {
 			if(Board.getEntity(ahead) == null) {
 				destPoint = null;
 				moveAhead();
+				this.batteryWasted = this.batteryWasted - this.battery;
 				this.state = State.charging;
 				this.central.setCarParkingHasArrived(this.park, false);
 			}
@@ -206,13 +211,15 @@ public class Car extends Entity {
 		
 		if(hasRequest() && client()){
 			dropClient();
-			learn();	
+			this.result = Result.clientFailure;
+			//learn();	
 			requestsNotSucceed++;	
 		}
 		else if(hasRequest()){
 			this.central.pushPriorityRequest(this.request);
 			this.request = null;
-			learn();
+			this.result = Result.requestFailure;
+			//learn();
 		}
 		else if(this.park != null){
 			this.central.setCarParkingOccupied(this.park, false);
@@ -343,6 +350,7 @@ public class Car extends Entity {
 			destPoint = closestCarParking.point;
 			this.park = closestCarParking;
 			this.central.setCarParkingOccupied(closestCarParking, true);
+			this.batteryWasted = this.battery;
 		}
 
 		
@@ -377,6 +385,7 @@ public class Car extends Entity {
 						request = r;
 						central.popRequest(r);
 						destPoint = r.getClientPoint();
+						this.threshold_for_trip = battery - r.getTravelDistance() - minDistance;
 						break;
 					}
 				}
@@ -386,27 +395,24 @@ public class Car extends Entity {
 
 	// =======   Learning functions =====================
 
-	public long reward(){
-		return this.threshold - this.battery;
-		/*
+	public long reward(Result result){
+		//return this.threshold - this.battery;
 		switch(result){
 			case succeed:
-				
-	
+				return this.batteryWasted - this.threshold;
 			case requestFailure:
-
-
-
-				return -10;
+				return (this.threshold - this.threshold_for_trip); //+ this.request.getTravelDistance(); 
 			case clientFailure:
-				return -150;
+				return this.threshold- this.threshold_for_trip;
 			default:
 				return 0;
-		}*/
+		}
+		
 	}
 
 	public void learn(){
-		long u = reward();
+		if(this.result.equals(Result.noResult)) return;
+		long u = reward(this.result);
 		int carsNumber = this.central.numberOfcars();
 		double learned = u * learningRate;
 		threshold = Math.round((threshold + learned + (carsNumber - 1)*threshold) / carsNumber);
