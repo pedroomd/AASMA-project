@@ -19,6 +19,8 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.JTextPane;
+import javax.swing.*;
+import java.awt.*;
 
 
 public class GUI extends JFrame {
@@ -49,13 +51,28 @@ public class GUI extends JFrame {
 	            	g.drawOval(12, 12, 17, 17);
 
 				}
-
 				else{
 					switch(((Car)entity).direction) {
-		    			case 0:  g.fillPolygon(new int[]{7, 22, 37}, new int[]{37, 7, 37}, 3); break;
-		    			case 90: g.fillPolygon(new int[]{8, 38, 8}, new int[]{7, 22, 37}, 3); break;
-		    			case 180:g.fillPolygon(new int[]{10, 40, 25}, new int[]{7, 7, 37}, 3); break;
-		    			default: g.fillPolygon(new int[]{8, 38, 38}, new int[]{22, 7, 37}, 3); 
+		    			case 0:  
+							g.fillPolygon(new int[]{7, 22, 37}, new int[]{37, 7, 37}, 3);
+							g.setColor(Color.BLACK); 
+							g.drawString(Integer.toString(((Car)entity).number), 17, 28);
+							//g.setColor(Color.BLACK); 
+							break;
+		    			case 90: 
+							g.fillPolygon(new int[]{8, 38, 8}, new int[]{7, 22, 37}, 3);
+							g.setColor(Color.BLACK); 
+							g.drawString(Integer.toString(((Car)entity).number), 15, 27);
+							break;
+		    			case 180:
+							g.fillPolygon(new int[]{10, 40, 25}, new int[]{7, 7, 37}, 3);
+							g.setColor(Color.BLACK); 
+							g.drawString(Integer.toString(((Car)entity).number), 20, 24); 
+							break;
+		    			default: 
+							g.fillPolygon(new int[]{8, 38, 38}, new int[]{22, 7, 37}, 3);
+							g.setColor(Color.BLACK); 
+							g.drawString(Integer.toString(((Car)entity).number), 22, 26);  
 		    		}
 				}
             }
@@ -97,6 +114,9 @@ public class GUI extends JFrame {
 				Block block = Board.getBlock(new Point(i,j));
 				JPanel p = ((JPanel)boardPanel.getComponent(row*nX+col));
 				p.setBackground(block.color);
+				JLabel jlabel = new JLabel(i+"/"+j);
+				jlabel.setFont(new Font("Verdana",1,5));
+				p.add(jlabel);
 				p.setBorder(BorderFactory.createLineBorder(Color.white));
 			}
 		}

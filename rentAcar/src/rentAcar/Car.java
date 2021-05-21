@@ -8,9 +8,10 @@ import rentAcar.Block.Shape;
 
 public class Car extends Entity {
 
-	public enum State {charging, startRequest, occupied, nonOccupied, needCharger }
+	public enum State {charging, startRequest, occupied, nonOccupied, needCharger, noBattery }
 	public static int threshold = 30;
-	public static int maxBattery = 150;
+	public static int maxBattery = 120;
+	public int number;
 	public State state = State.nonOccupied;
 	public int direction = 90;
 	public int battery = maxBattery;
@@ -21,9 +22,13 @@ public class Car extends Entity {
 	private Point ahead;
 	public CarParking park = null;
 	public Point destPoint = null;
+	public Workshop workshop = null;
+	public int requestsNotSucceed = 0;
+	
 
-    public Car(Point point, Color color) {
+    public Car(Point point, Color color, int number) {
 		super(point, color);
+		this.number = number;
 	}
 
 	public void setCentral(Central central) {
@@ -44,6 +49,7 @@ public class Car extends Entity {
 		else if(hasDestPoint()) nextPosition();
 		else if(lowBattery() && this.state == State.nonOccupied) searchCarParking();
 	  	else if(distanceComplete() && this.state == State.occupied ) dropClient();
+		else if(noBattery()) goToWorkshop();
 	  	else if(!isFreeCell()) rotateRandomly();
 	  	else if(random.nextInt(10) == 0) rotateRandomly();
 	  	else moveAhead();
@@ -95,8 +101,16 @@ public class Car extends Entity {
 		return destPoint != null;
 	}
 
+	public boolean hasWorkshop(){
+		return workshop != null;
+	}
+
 	public boolean lowBattery() {
 		return battery <= threshold;
+	}
+
+	public boolean noBattery(){
+		return battery <= 0;
 	}
     
     public boolean client() {
@@ -121,10 +135,17 @@ public class Car extends Entity {
 		else if(this.battery >= maxBattery || central.getCarParking(this.park).getHasArrived()){
 			this.state = State.nonOccupied;
 			park = null;
+			this.color = Color.pink;
 		} 
+
+		else this.battery += 20;
 		
-		else this.battery += 10;
-		
+	}
+
+	public void changeCarColor(){
+		if(battery == 5) this.color = Color.RED;
+		else if (battery >= threshold) this.color = Color.pink;
+		else if(battery <= threshold)this.color = color.yellow;
 	}
 
     
@@ -174,7 +195,42 @@ public class Car extends Entity {
 		if(isFreeCell()) moveAhead();
 	}
 
+	public void goToWorkshop(){
+	
+		this.state = State.noBattery;
+		
+		if(hasRequest() && client()){
+			dropClient();	
+			requestsNotSucceed++;	
+		}
+		else if(hasRequest()){
+			this.central.pushPriorityRequest(this.request);
+			this.request = null;
+		}
+		else if(this.park != null){
+			this.central.setCarkParkingOccupied(this.park);
+			this.park = null;
+		}
+		this.destPoint = null;
+					
+		if(this.central.isWorkShopFree()){
+			this.central.changeWorkshopOccupied();
+			workshop = this.central.getWorkshop();
+			Board.updateEntityPosition(point, workshop.location);
+			point = workshop.location;
+			this.state = State.nonOccupied;
+			this.battery = maxBattery;
+			this.color = color.pink;
+			this.direction = random.nextBoolean() ? 180 : 270;
+		}
+	}
+
 	public void nextPosition(){
+
+		if(noBattery()){
+			goToWorkshop();
+			return;
+		}
 
         int dx = destPoint.x - point.x;
         int dy = destPoint.y - point.y;
@@ -220,7 +276,11 @@ public class Car extends Entity {
 	
 	/* Move agent forward */
 	public void moveAhead() {
-		
+
+		if(hasWorkshop()){
+			this.workshop = null;
+			this.central.changeWorkshopOccupied();
+		}	
 		Board.updateEntityPosition(point,ahead);
 		if(client()) {
 			client.move(ahead); 
@@ -272,7 +332,7 @@ public class Car extends Entity {
 		
 		if(closestCarParking != null) {
 			this.state = State.needCharger;
-			destPoint = closestCarParking.point;
+			destPoint = closestCarParking.location;
 			this.park = closestCarParking;
 			this.central.setCarkParkingOccupied(closestCarParking);
 		}

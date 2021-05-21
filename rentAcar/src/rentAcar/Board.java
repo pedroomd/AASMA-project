@@ -21,6 +21,7 @@ public class Board {
 	private static List<Car> cars;
 	private static List<CarParking> carParkings;
 	private static List<Client> clients;
+	private static Workshop workshop;
 
 	private static Random rand = new Random();
  
@@ -40,18 +41,23 @@ public class Board {
 		carParkings.add(new CarParking(new Point(10,4), Shape.carParking, Color.blue));
 		carParkings.add(new CarParking(new Point(10,5), Shape.carParking, Color.blue));		
 
+
 		/** B: create cars*/
 		cars = new ArrayList<Car>();
-		cars.add(new Car(new Point(2,12), Color.pink));
-		cars.add(new Car(new Point(9,12), Color.pink));
-		cars.add(new Car(new Point(8,7) , Color.pink));
-		cars.add(new Car(new Point(13,7), Color.pink));
-		cars.add(new Car(new Point(2,6) , Color.pink));
-		cars.add(new Car(new Point(5,3) , Color.pink));
+		cars.add(new Car(new Point(2,12), Color.pink,1));
+		cars.add(new Car(new Point(9,12), Color.pink,2));
+		cars.add(new Car(new Point(8,7) , Color.pink,3));
+		cars.add(new Car(new Point(13,7), Color.pink,4));
+		cars.add(new Car(new Point(2,6) , Color.pink,5));
+		cars.add(new Car(new Point(5,3) , Color.pink,6));
+
+		/**C: create workshop */
+
+		workshop = new Workshop(new Point(14,14));
 
 		clients = new ArrayList<>();
 
-		central = new Central(carParkings, cars);
+		central = new Central(carParkings, cars, workshop);
 
 		for(Car c : cars) {
 			c.setCentral(central);
@@ -78,7 +84,8 @@ public class Board {
 		for(Car c : cars){
 			objects[c.point.x][c.point.y]=c;
 		}
-
+		//workshop
+		board[workshop.location.x][workshop.location.y] = new Block(Shape.workshop, Color.gray);
 	}
 	
 	/****************************
@@ -92,6 +99,9 @@ public class Board {
 		return board[point.x][point.y];
 	}
 	public static void updateEntityPosition(Point point, Point newpoint) {
+		if(objects[point.x][point.y] instanceof Client){
+			System.out.println("DO TIPO CLIENTE");
+		}
 		objects[newpoint.x][newpoint.y] = objects[point.x][point.y];
 		objects[point.x][point.y] = null;
 	}	
@@ -207,4 +217,5 @@ public class Board {
 		clients.remove(entity);
 		GUI.removeObject(entity);
 	}
+
 }

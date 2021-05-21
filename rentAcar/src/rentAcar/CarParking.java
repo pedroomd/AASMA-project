@@ -11,6 +11,7 @@ public class CarParking extends Block {
     public CarParking(Point point, Shape shape, Color color){
         super(shape, color);
         this.point = point;
+
     }
 
     public void changeOccupied(){
