@@ -9,8 +9,8 @@ import rentAcar.Block.Shape;
 public class Car extends Entity {
 
 	public enum State {charging, startRequest, occupied, nonOccupied, needCharger, noBattery }
-	public static int threshold = 30;
-	public static int maxBattery = 120;
+	public static int threshold = 80;
+	public static int maxBattery = 200;
 	public int number;
 	public State state = State.nonOccupied;
 	public int direction = 90;
@@ -142,12 +142,6 @@ public class Car extends Entity {
 		
 	}
 
-	public void changeCarColor(){
-		if(battery == 5) this.color = Color.RED;
-		else if (battery >= threshold) this.color = Color.pink;
-		else if(battery <= threshold)this.color = color.yellow;
-	}
-
     
     /* Rotate agent to right */
 	public void rotateRandomly() {
@@ -174,11 +168,11 @@ public class Car extends Entity {
 				destPoint = null;
 				moveAhead();
 				this.state = State.charging;
-				this.central.setCarkParkingHasArrived(this.park, false);
+				this.central.setCarParkingHasArrived(this.park, false);
 			}
 			
 			else {
-				this.central.setCarkParkingHasArrived(this.park, true);
+				this.central.setCarParkingHasArrived(this.park, true);
 			}
 		}
 		else if(this.state.equals(State.startRequest) && isClient()){
@@ -208,7 +202,7 @@ public class Car extends Entity {
 			this.request = null;
 		}
 		else if(this.park != null){
-			this.central.setCarkParkingOccupied(this.park);
+			this.central.setCarParkingOccupied(this.park);
 			this.park = null;
 		}
 		this.destPoint = null;
@@ -332,9 +326,9 @@ public class Car extends Entity {
 		
 		if(closestCarParking != null) {
 			this.state = State.needCharger;
-			destPoint = closestCarParking.location;
+			destPoint = closestCarParking.point;
 			this.park = closestCarParking;
-			this.central.setCarkParkingOccupied(closestCarParking);
+			this.central.setCarParkingOccupied(closestCarParking);
 		}
 
 		
