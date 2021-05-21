@@ -2,12 +2,12 @@ package rentAcar;
 
 import java.awt.*;
 
-public class CarParking {
+public class Workshop {
 
-    public boolean occupied = false;
     public Point location;
-    
-    public CarParking(Point location){
+    private boolean occupied = false;
+
+    public Workshop(Point location){
         this.location = location;
     }
 

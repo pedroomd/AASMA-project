@@ -3,7 +3,7 @@ import java.awt.Color;
 
 public class Block {
 
-	public enum Shape { carParking, free, ocean }
+	public enum Shape { carParking, free, ocean, workshop }
 	public Shape shape;
 	public Color color;
 	
