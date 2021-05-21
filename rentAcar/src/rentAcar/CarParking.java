@@ -14,8 +14,8 @@ public class CarParking extends Block {
 
     }
 
-    public void changeOccupied(){
-        this.occupied = !this.occupied;
+    public void changeOccupied(boolean bool){
+        this.occupied = bool;
     }
 
     public boolean isOccupied(){

@@ -59,9 +59,9 @@ public class Central {
     }
 
 
-    public void setCarParkingOccupied(CarParking park){
+    public void setCarParkingOccupied(CarParking park, boolean bool){
         int index = this.carParkings.indexOf(park);
-        this.carParkings.get(index).changeOccupied();
+        this.carParkings.get(index).changeOccupied(bool);
     }
     
     public void setCarParkingHasArrived(CarParking park, boolean bool){
