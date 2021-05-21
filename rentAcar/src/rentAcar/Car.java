@@ -275,12 +275,44 @@ public class Car extends Entity {
 		else {
 			if(moveInX.equals(aheadRight) || moveInY.equals(aheadRight)) {
 				rotateRight();
-				if(isFreeCell()) moveAhead();
+				int i = 0;
+				while(i < 5) {
+					this.direction = (this.direction + i * 90) % 360;
+					ahead = aheadPosition(this.point, this.direction);
+					if(isFreeCell()) {
+						moveAhead();
+						break;
+					}
+					i += 1;
+				}
 			}
 			
-			else  {	
+			else if(moveInX.equals(aheadLeft) || moveInY.equals(aheadLeft)) {	
 				rotateLeft();
-				if(isFreeCell()) moveAhead();
+				int i = 0;
+				while(i < 5) {
+					this.direction = (this.direction - i * 90 + 360) % 360;
+					ahead = aheadPosition(this.point, this.direction);
+					if(isFreeCell()) {
+						moveAhead();
+						break;
+					}
+					i += 1;
+				}
+			}
+			
+			else {
+				rotateLeft();
+				int i = 0;
+				while(i < 5) {
+					this.direction = (this.direction - i * 90 + 360) % 360;
+					ahead = aheadPosition(this.point, this.direction);
+					if(isFreeCell()) {
+						moveAhead();
+						break;
+					}
+					i += 1;
+				}
 			}
 		}
 	}
