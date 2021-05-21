@@ -269,7 +269,7 @@ public class Car extends Entity {
 			rotateLeft();
 			completeDest();
 		}
-
+		
 		else if ((moveInX.equals(ahead) || moveInY.equals(ahead)) && isFreeCell()) moveAhead();
 		
 		else {
@@ -278,12 +278,10 @@ public class Car extends Entity {
 				if(isFreeCell()) moveAhead();
 			}
 			
-			else if (moveInX.equals(aheadLeft) || moveInY.equals(aheadLeft)) {	
+			else  {	
 				rotateLeft();
 				if(isFreeCell()) moveAhead();
 			}
-			
-			else doRandMov();
 		}
 	}
 	
