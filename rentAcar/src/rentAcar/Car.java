@@ -182,12 +182,6 @@ public class Car extends Entity {
 		}
 	}
 	
-	private void doRandMov() {
-		int rand = random.nextInt(3) + 1;
-		this.direction = (this.direction + (rand * 90)) % 360;
-		ahead = aheadPosition(this.point, this.direction);
-		if(isFreeCell()) moveAhead();
-	}
 
 	public void goToWorkshop(){
 	
@@ -236,36 +230,73 @@ public class Car extends Entity {
 		Point moveInX = new Point(nextX, point.y);
 		Point moveInY = new Point(point.x, nextY);
 		
+		int rotateRight = (direction+90)%360; 
+		int rotateLeft = (direction-90+360)%360;
+		
+		Point aheadRight = aheadPosition(this.point, rotateRight);
+		Point aheadLeft = aheadPosition(this.point, rotateLeft);
+		
 		
 		if (destPoint.equals(ahead)) completeDest();
 		
-		else if ((moveInX.equals(ahead) || moveInY.equals(ahead)) && isFreeCell()) moveAhead();
+		else if (destPoint.equals(aheadRight)) {
+			rotateRight();
+			completeDest();
+		}
 		
+		else if (destPoint.equals(aheadLeft)) {
+			rotateLeft();
+			completeDest();
+		}
+		
+		else if ((moveInX.equals(ahead) || moveInY.equals(ahead)) && isFreeCell()) moveAhead();
+			
 		else {
-			int rotateRight = (direction+90)%360; 
-			int rotateLeft = (direction-90+360)%360;
-			
-			Point aheadRight = aheadPosition(this.point, rotateRight);
-			Point aheadLeft = aheadPosition(this.point, rotateLeft);
-			
-			if(random.nextInt(5) != 0) {
 
-				if(moveInX.equals(aheadRight) || moveInY.equals(aheadRight)) {
-					rotateRight();
-					if (destPoint.equals(ahead)) completeDest();
-					else if(isFreeCell()) moveAhead();
-				}
+			if(moveInX.equals(aheadRight) || moveInY.equals(aheadRight)) {
+				rotateRight();
 				
-				else if (moveInX.equals(aheadLeft) || moveInY.equals(aheadLeft)) {	
-					rotateLeft();
-					if (destPoint.equals(ahead)) completeDest();
-					else if(isFreeCell()) moveAhead();
-				}
+				if(isFreeCell()) moveAhead();
 				
-				else doRandMov();
+				else {
+					int i = 1;
+					while(i < 5) {
+						
+						this.direction = (this.direction + (i * 90)) % 360;
+						ahead = aheadPosition(this.point, this.direction);
+						
+						if(isFreeCell()) {
+							moveAhead();
+							break;
+						}
+						
+						i += 1;
+					}
+				}
 			}
 			
-			else doRandMov();
+			else if (moveInX.equals(aheadLeft) || moveInY.equals(aheadLeft)) {	
+				rotateLeft();
+
+				if(isFreeCell()) moveAhead();
+				
+				else {
+					int i = 1;
+					while(i < 5) {
+						
+						this.direction = (this.direction - (i * 90) + 360) % 360;
+						ahead = aheadPosition(this.point, this.direction);
+						
+						if(isFreeCell()) {
+							moveAhead();
+							break;
+						}
+						
+						i += 1;
+					}
+				}
+			}
+			
 		}
 	}
 	
