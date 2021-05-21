@@ -33,6 +33,7 @@ public class Central {
         return this.cars;
     }
 
+
     public Workshop getWorkshop(){
         return this.workshop;
     }
@@ -85,5 +86,13 @@ public class Central {
 
     public void changeWorkshopOccupied(){
         this.workshop.changeOccupied();
+    }
+
+    public int numberOfcars(){
+        return cars.size();
+    }
+
+    public void sendThreshold(long threshold){
+
     }
 }

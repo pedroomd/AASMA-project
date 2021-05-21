@@ -8,8 +8,15 @@ import rentAcar.Block.Shape;
 
 public class Car extends Entity {
 
+
+	//learning variable
+	public enum Result { succeed, requestFailure, clientFailure}
+	public int batteryWasted;
+	public double learningRate = 0.1;
+
+	//
 	public enum State {charging, startRequest, occupied, nonOccupied, needCharger, noBattery }
-	public static int threshold = 80;
+	public long threshold = 80;
 	public static int maxBattery = 200;
 	public int number;
 	public State state = State.nonOccupied;
@@ -38,17 +45,21 @@ public class Car extends Entity {
 	public int getBattery(){
 		return this.battery;
 	}
+
+	public void setThreshold(long threshold){
+		this.threshold = threshold;
+	}
 	
     
     public void agentReactiveDecision() {
     	
 	  	ahead = aheadPosition(this.point, this.direction);
 	  	changeCarColor();
-		
+		System.out.println(number + " " + threshold);
 		if(isCharging()) charge();
 		else if(hasDestPoint()) nextPosition();
 		else if(lowBattery() && this.state == State.nonOccupied) searchCarParking();
-	  	else if(distanceComplete() && this.state == State.occupied ) dropClient();
+	  	else if(distanceComplete() && this.state == State.occupied ){ dropClient(); learn();}
 		else if(noBattery()) goToWorkshop();
 	  	else if(!isFreeCell()) rotateRandomly();
 	  	else if(random.nextInt(10) == 0) rotateRandomly();
@@ -182,18 +193,26 @@ public class Car extends Entity {
 		}
 	}
 	
+	private void doRandMov() {
+		int rand = random.nextInt(3) + 1;
+		this.direction = (this.direction + (rand * 90)) % 360;
+		ahead = aheadPosition(this.point, this.direction);
+		if(isFreeCell()) moveAhead();
+	}
 
 	public void goToWorkshop(){
 	
 		this.state = State.noBattery;
 		
 		if(hasRequest() && client()){
-			dropClient();	
+			dropClient();
+			learn();	
 			requestsNotSucceed++;	
 		}
 		else if(hasRequest()){
 			this.central.pushPriorityRequest(this.request);
 			this.request = null;
+			learn();
 		}
 		else if(this.park != null){
 			this.central.setCarParkingOccupied(this.park, false);
@@ -230,73 +249,36 @@ public class Car extends Entity {
 		Point moveInX = new Point(nextX, point.y);
 		Point moveInY = new Point(point.x, nextY);
 		
-		int rotateRight = (direction+90)%360; 
-		int rotateLeft = (direction-90+360)%360;
-		
-		Point aheadRight = aheadPosition(this.point, rotateRight);
-		Point aheadLeft = aheadPosition(this.point, rotateLeft);
-		
 		
 		if (destPoint.equals(ahead)) completeDest();
 		
-		else if (destPoint.equals(aheadRight)) {
-			rotateRight();
-			completeDest();
-		}
-		
-		else if (destPoint.equals(aheadLeft)) {
-			rotateLeft();
-			completeDest();
-		}
-		
 		else if ((moveInX.equals(ahead) || moveInY.equals(ahead)) && isFreeCell()) moveAhead();
-			
+		
 		else {
+			int rotateRight = (direction+90)%360; 
+			int rotateLeft = (direction-90+360)%360;
+			
+			Point aheadRight = aheadPosition(this.point, rotateRight);
+			Point aheadLeft = aheadPosition(this.point, rotateLeft);
+			
+			if(random.nextInt(5) != 0) {
 
-			if(moveInX.equals(aheadRight) || moveInY.equals(aheadRight)) {
-				rotateRight();
-				
-				if(isFreeCell()) moveAhead();
-				
-				else {
-					int i = 1;
-					while(i < 5) {
-						
-						this.direction = (this.direction + (i * 90)) % 360;
-						ahead = aheadPosition(this.point, this.direction);
-						
-						if(isFreeCell()) {
-							moveAhead();
-							break;
-						}
-						
-						i += 1;
-					}
+				if(moveInX.equals(aheadRight) || moveInY.equals(aheadRight)) {
+					rotateRight();
+					if (destPoint.equals(ahead)) completeDest();
+					else if(isFreeCell()) moveAhead();
 				}
+				
+				else if (moveInX.equals(aheadLeft) || moveInY.equals(aheadLeft)) {	
+					rotateLeft();
+					if (destPoint.equals(ahead)) completeDest();
+					else if(isFreeCell()) moveAhead();
+				}
+				
+				else doRandMov();
 			}
 			
-			else if (moveInX.equals(aheadLeft) || moveInY.equals(aheadLeft)) {	
-				rotateLeft();
-
-				if(isFreeCell()) moveAhead();
-				
-				else {
-					int i = 1;
-					while(i < 5) {
-						
-						this.direction = (this.direction - (i * 90) + 360) % 360;
-						ahead = aheadPosition(this.point, this.direction);
-						
-						if(isFreeCell()) {
-							moveAhead();
-							break;
-						}
-						
-						i += 1;
-					}
-				}
-			}
-			
+			else doRandMov();
 		}
 	}
 	
@@ -378,8 +360,9 @@ public class Car extends Entity {
 		if(this.state == State.charging || this.state == State.nonOccupied) {
 			for(Request r : requestsAvailable) {
 				int minDistance = manhattanDistance(this.point, r.getClientPoint());
-				
-				if((battery - r.getTravelDistance() - minDistance) > threshold) {
+				double fuck = Math.random();
+				if(fuck >= 0.8) System.out.println("VAI APRENDER CARALHO");
+				if((battery - r.getTravelDistance() - minDistance) > threshold || fuck >= 0.8) {
 					
 					for(Car c : cars) {
 						int distance = manhattanDistance(c.point, r.getClientPoint());
@@ -400,4 +383,42 @@ public class Car extends Entity {
 			}
 		}
 	}
+
+	// =======   Learning functions =====================
+
+	public long reward(){
+		return this.threshold - this.battery;
+		/*
+		switch(result){
+			case succeed:
+				
+	
+			case requestFailure:
+
+
+
+				return -10;
+			case clientFailure:
+				return -150;
+			default:
+				return 0;
+		}*/
+	}
+
+	public void learn(){
+		long u = reward();
+		int carsNumber = this.central.numberOfcars();
+		double learned = u * learningRate;
+		threshold = Math.round((threshold + learned + (carsNumber - 1)*threshold) / carsNumber);
+		sendThreshold();
+		
+	}
+
+	public void sendThreshold(){
+		List<Car> cars = this.central.getCars();
+		for(Car car : cars){
+			if(!car.equals(this)) car.setThreshold(this.threshold);
+		}
+	}
+
 }
