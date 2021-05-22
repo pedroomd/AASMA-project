@@ -31,6 +31,7 @@ public class Car extends Entity {
 	public Point destPoint = null;
 	public Workshop workshop = null;
 	public int requestsNotSucceed = 0;
+	public int stuck = 0;
 	
 
     public Car(Point point, Color color, int number) {
@@ -55,7 +56,7 @@ public class Car extends Entity {
     	
 	  	ahead = aheadPosition(this.point, this.direction);
 	  	changeCarColor();
-		System.out.println(number + " " + threshold);
+		
 		if(isCharging()) charge();
 		else if(hasDestPoint()) nextPosition();
 		else if(lowBattery() && this.state == State.nonOccupied) searchCarParking();
@@ -203,7 +204,7 @@ public class Car extends Entity {
 	}
 
 	public void goToWorkshop(){
-	
+		System.out.println(number + " workshop");
 		this.state = State.noBattery;
 		
 		if(hasRequest() && client()){
@@ -236,12 +237,12 @@ public class Car extends Entity {
 	}
 
 	public void nextPosition(){
-
+		System.out.println(number + " nextposition");
 		if(noBattery()){
 			goToWorkshop();
 			return;
 		}
-
+		
         int dx = destPoint.x - point.x;
         int dy = destPoint.y - point.y;
 
@@ -276,8 +277,8 @@ public class Car extends Entity {
 					if (destPoint.equals(ahead)) completeDest();
 					else if(isFreeCell()) moveAhead();
 				}
-				
-				else doRandMov();
+			
+				else { doRandMov(); stuck++;System.out.println("ENTROU");};
 			}
 			
 			else doRandMov();
@@ -319,6 +320,7 @@ public class Car extends Entity {
 	}
 	
 	public void dropClient() {
+		System.out.println(number + " dropclient");
 		this.client.drop();
 	    this.client = null;
 	    this.request = null;
@@ -326,7 +328,7 @@ public class Car extends Entity {
 	}
 
 	public void searchCarParking(){
-
+		System.out.println(number + " searchcarparking");
 		List<CarParking> carParkingsAvailable =  central.getAvailableCarParkings();
 		CarParking closestCarParking = null;
 		int minDistance = Integer.MAX_VALUE;
@@ -341,6 +343,21 @@ public class Car extends Entity {
 		}
 		
 		if(closestCarParking != null) {
+			this.state = State.needCharger;
+			destPoint = closestCarParking.point;
+			this.park = closestCarParking;
+			this.central.setCarParkingOccupied(closestCarParking, true);
+		}
+		else{
+			minDistance = Integer.MAX_VALUE;
+			List<CarParking> carParkings = this.central.getCarParkings();
+			for(CarParking park: carParkings) {
+				int distance = manhattanDistance(this.point, park.point);
+				if(distance < minDistance){
+					minDistance = distance;
+					closestCarParking = park;
+				}
+			}
 			this.state = State.needCharger;
 			destPoint = closestCarParking.point;
 			this.park = closestCarParking;
@@ -390,21 +407,6 @@ public class Car extends Entity {
 
 	public long reward(){
 		return this.threshold - this.battery;
-		/*
-		switch(result){
-			case succeed:
-				
-	
-			case requestFailure:
-
-
-
-				return -10;
-			case clientFailure:
-				return -150;
-			default:
-				return 0;
-		}*/
 	}
 
 	public void learn(){

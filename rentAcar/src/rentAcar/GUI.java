@@ -45,6 +45,7 @@ public class GUI extends JFrame {
             super.paintComponent(g);
             for(Entity entity : entities) {
 				g.setColor(entity.color);
+				//System.out.println(entity.color);
 				if(entity instanceof Client) {
 					g.fillOval(12, 12, 17, 17);
 		            g.setColor(Color.white);
