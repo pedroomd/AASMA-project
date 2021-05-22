@@ -22,6 +22,8 @@ import javax.swing.JTextPane;
 import javax.swing.*;
 import java.awt.*;
 
+import rentAcar.Block.Shape;
+
 
 public class GUI extends JFrame {
 
@@ -51,6 +53,15 @@ public class GUI extends JFrame {
 	            	g.drawOval(12, 12, 17, 17);
 
 				}
+<<<<<<< HEAD
+=======
+
+				else if (entity instanceof CarParking) {
+					g.setColor(Color.WHITE);
+					g.drawString("P", 15, 25);
+					
+				}
+>>>>>>> parent of eba18df (hhh)
 				else{
 					switch(((Car)entity).direction) {
 		    			case 0:  
@@ -74,6 +85,8 @@ public class GUI extends JFrame {
 							g.setColor(Color.BLACK); 
 							g.drawString(Integer.toString(((Car)entity).number), 22, 26);  
 		    		}
+					//g.setColor(Color.RED);
+					//g.drawString("C", 15, 27);
 				}
             }
         }
@@ -81,7 +94,7 @@ public class GUI extends JFrame {
 
 	public GUI() {
 		//image = new ImageIcon(getClass().getResource("charger.png"));
-		setTitle("Rent-A-Car - Autonomous Solutions");		
+		setTitle("Call-A-Car - Autonomous Solutions");		
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setLayout(null);
 		setSize(655, 725);

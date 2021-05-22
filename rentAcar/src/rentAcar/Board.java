@@ -36,10 +36,10 @@ public class Board {
 		/** A: create car parkings*/
 
 		carParkings = new ArrayList<CarParking>();
-		carParkings.add(new CarParking(new Point(4,10), Shape.carParking, Color.blue));
-		carParkings.add(new CarParking(new Point(5,10), Shape.carParking, Color.blue));
-		carParkings.add(new CarParking(new Point(10,4), Shape.carParking, Color.blue));
-		carParkings.add(new CarParking(new Point(10,5), Shape.carParking, Color.blue));		
+		carParkings.add(new CarParking(new Point(4,10), Color.blue));
+		carParkings.add(new CarParking(new Point(5,10), Color.blue));
+		carParkings.add(new CarParking(new Point(10,4), Color.blue));
+		carParkings.add(new CarParking(new Point(10,5), Color.blue));		
 
 
 		/** B: create cars*/
@@ -80,6 +80,7 @@ public class Board {
 		
 		for(CarParking c: carParkings){
 			board[c.point.x][c.point.y] = new Block(Shape.carParking, c.color);
+			objects[c.point.x][c.point.y]= c;
 		} 
 		for(Car c : cars){
 			objects[c.point.x][c.point.y]=c;
@@ -161,7 +162,6 @@ public class Board {
 		for(Car a : cars) a.receiveMessage(action, pt);		
 	}
 	
-	
 	public static void step() {
 		removeObjects();
 		if(clients.size() < max_clients){
@@ -175,6 +175,15 @@ public class Board {
 					Client client = new Client(new Point(x,y), Color.BLACK, request);
 					clients.add(client);
 					objects[x][y] = client;
+
+					System.out.println("OBJECTS");
+					for(int i = 0; i < objects[0].length; i++){
+						for(int j = 0; j < objects[1].length;j++){
+							if(objects[i][j] != null){
+								System.out.println(i + " " + j);
+							}
+						}
+					} 
 				}
 			}
 		}
@@ -183,7 +192,7 @@ public class Board {
 		for(Car c : cars){
 			c.getRequest();
 			c.agentReactiveDecision();
-		}
+		} 
 
 		displayObjects();
 		GUI.update();
@@ -196,11 +205,13 @@ public class Board {
 
 	public static void displayObjects(){
 		for(Car c : cars) GUI.displayObject(c);
+		for(CarParking c : carParkings) GUI.displayObject(c);
 		for(Client c: clients) GUI.displayObject(c);
 	}
 	
 	public static void removeObjects(){
 		for(Car c : cars) GUI.removeObject(c);
+		for(CarParking c : carParkings) GUI.removeObject(c);
 		for(Client c : clients) GUI.removeObject(c);
 	}
 	
