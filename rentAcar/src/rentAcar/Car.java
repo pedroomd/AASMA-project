@@ -13,10 +13,14 @@ public class Car extends Entity {
 	public enum Result { succeed, requestFailure, clientFailure}
 	public int batteryWasted;
 	public double learningRate = 0.1;
+	public boolean parkAchieved = false;
+	public int batteryToPark = 0;
+	public double epsilon;
+	public boolean learning = false;
 
 	//
 	public enum State {charging, startRequest, occupied, nonOccupied, needCharger, noBattery }
-	public long threshold = 80;
+	public long threshold = 20;
 	public static int maxBattery = 200;
 	public int number;
 	public State state = State.nonOccupied;
@@ -56,11 +60,11 @@ public class Car extends Entity {
     	
 	  	ahead = aheadPosition(this.point, this.direction);
 	  	changeCarColor();
-		
+		System.out.println(this.threshold);
 		if(isCharging()) charge();
 		else if(hasDestPoint()) nextPosition();
-		else if(lowBattery() && this.state == State.nonOccupied) searchCarParking();
-	  	else if(distanceComplete() && this.state == State.occupied ){ dropClient(); learn();}
+		else if((lowBattery() || this.learning) && this.state == State.nonOccupied) searchCarParking();
+	  	else if(distanceComplete() && this.state == State.occupied) dropClient();
 		else if(noBattery()) goToWorkshop();
 	  	else if(!isFreeCell()) rotateRandomly();
 	  	else if(random.nextInt(10) == 0) rotateRandomly();
@@ -183,6 +187,11 @@ public class Car extends Entity {
 				moveAhead();
 				this.state = State.charging;
 				this.central.setCarParkingHasArrived(this.park, false);
+				if(batteryToPark > 0 && this.learning){
+					this.parkAchieved = true;
+					learn();
+				} 
+				
 			}
 			
 			else {
@@ -204,23 +213,28 @@ public class Car extends Entity {
 	}
 
 	public void goToWorkshop(){
-		System.out.println(number + " workshop");
+		//System.out.println(number + " workshop");
 		this.state = State.noBattery;
 		
 		if(hasRequest() && client()){
 			dropClient();
-			learn();	
-			requestsNotSucceed++;	
+			requestsNotSucceed++;
+			if(this.learning)learn();
+			
 		}
 		else if(hasRequest()){
 			this.central.pushPriorityRequest(this.request);
 			this.request = null;
-			learn();
+			if(this.learning)learn();
 		}
 		else if(this.park != null){
 			this.central.setCarParkingOccupied(this.park, false);
 			this.central.setCarParkingHasArrived(this.park, false);
 			this.park = null;
+			if(batteryToPark > 0 && this.learning){
+				this.parkAchieved = false;
+				learn();
+			} 
 		}
 		this.destPoint = null;
 					
@@ -237,7 +251,7 @@ public class Car extends Entity {
 	}
 
 	public void nextPosition(){
-		System.out.println(number + " nextposition");
+		//System.out.println(number + " nextposition");
 		if(noBattery()){
 			goToWorkshop();
 			return;
@@ -320,15 +334,16 @@ public class Car extends Entity {
 	}
 	
 	public void dropClient() {
-		System.out.println(number + " dropclient");
+		//System.out.println(number + " dropclient");
 		this.client.drop();
 	    this.client = null;
 	    this.request = null;
 	    this.state = State.nonOccupied;
+		
 	}
 
 	public void searchCarParking(){
-		System.out.println(number + " searchcarparking");
+		//System.out.println(number + " searchcarparking");
 		List<CarParking> carParkingsAvailable =  central.getAvailableCarParkings();
 		CarParking closestCarParking = null;
 		int minDistance = Integer.MAX_VALUE;
@@ -347,6 +362,7 @@ public class Car extends Entity {
 			destPoint = closestCarParking.point;
 			this.park = closestCarParking;
 			this.central.setCarParkingOccupied(closestCarParking, true);
+			this.batteryToPark = this.battery;
 		}
 		else{
 			minDistance = Integer.MAX_VALUE;
@@ -361,7 +377,7 @@ public class Car extends Entity {
 			this.state = State.needCharger;
 			destPoint = closestCarParking.point;
 			this.park = closestCarParking;
-			this.central.setCarParkingOccupied(closestCarParking, true);
+			this.batteryToPark = this.battery;
 		}
 
 		
@@ -379,9 +395,8 @@ public class Car extends Entity {
 		if(this.state == State.charging || this.state == State.nonOccupied) {
 			for(Request r : requestsAvailable) {
 				int minDistance = manhattanDistance(this.point, r.getClientPoint());
-				double fuck = Math.random();
-				if(fuck >= 0.8) System.out.println("VAI APRENDER CARALHO");
-				if((battery - r.getTravelDistance() - minDistance) > threshold || fuck >= 0.8) {
+				epsilon = Math.random();
+				if((battery - r.getTravelDistance() - minDistance) > threshold || epsilon >= 0.8) {
 					
 					for(Car c : cars) {
 						int distance = manhattanDistance(c.point, r.getClientPoint());
@@ -396,6 +411,10 @@ public class Car extends Entity {
 						request = r;
 						central.popRequest(r);
 						destPoint = r.getClientPoint();
+						if(!((battery - r.getTravelDistance() - minDistance) > threshold)){
+							this.learning = true;
+							System.out.println(number + " :VAI APRENDER CARALHO!!!");
+						} 
 						break;
 					}
 				}
@@ -406,17 +425,33 @@ public class Car extends Entity {
 	// =======   Learning functions =====================
 
 	public long reward(){
-		return this.threshold - this.battery;
+		if(this.parkAchieved){
+			if(this.batteryToPark < this.threshold){
+				return this.batteryToPark - this.threshold;
+			}
+			else return 0;
+		}
+		else{
+			if(this.batteryToPark > this.threshold){
+				System.out.println("FILHOS DA PUTAAAAAAAAAAAA");
+				return this.batteryToPark - this.threshold;
+			}
+			else if (batteryToPark == 0) return 10;
+			else return 0;
+		}
+
 	}
 
 	public void learn(){
 		long u = reward();
-		System.out.println("reward: " + u);
+		System.out.println(number + " reward: " + u);
 		int carsNumber = this.central.numberOfcars();
 		double learned = u * learningRate;
 		threshold = Math.round((threshold + learned + (carsNumber - 1)*threshold) / carsNumber);
 		sendThreshold();
-		
+		this.learning = false;
+		this.batteryToPark = 0;
+		this.parkAchieved = false;
 	}
 
 	public void sendThreshold(){
