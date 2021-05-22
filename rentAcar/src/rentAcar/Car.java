@@ -60,7 +60,9 @@ public class Car extends Entity {
 		if(isCharging()) charge();
 		else if(hasDestPoint()) nextPosition();
 		else if(lowBattery() && this.state == State.nonOccupied) searchCarParking();
-	  	else if(distanceComplete() && this.state == State.occupied ){ dropClient(); learn();}
+	  	else if(distanceComplete() && this.state == State.occupied ){ dropClient(); 
+	  	//learn();
+	  	}
 		else if(noBattery()) goToWorkshop();
 	  	else if(!isFreeCell()) rotateRandomly();
 	  	else if(random.nextInt(10) == 0) rotateRandomly();
@@ -159,8 +161,10 @@ public class Car extends Entity {
     
     /* Rotate agent to right */
 	public void rotateRandomly() {
-		if(random.nextBoolean()) rotateLeft();
-		else rotateRight();
+		int rand = random.nextInt(3);
+		if(rand == 0) rotateLeft();
+		else if(rand == 1) rotateRight();
+		else if(rand == 2) rotateBehind();
 	}
 	
 	/* Rotate agent to right */
@@ -172,6 +176,11 @@ public class Car extends Entity {
 	/* Rotate agent to left */
 	public void rotateLeft() {
 		direction = (direction-90+360)%360;
+		ahead = aheadPosition(this.point, this.direction);
+	}
+	
+	public void rotateBehind() {
+		direction = (direction + 180)%360;
 		ahead = aheadPosition(this.point, this.direction);
 	}
 	
@@ -196,12 +205,6 @@ public class Car extends Entity {
 		}
 	}
 	
-	private void doRandMov() {
-		int rand = random.nextInt(3) + 1;
-		this.direction = (this.direction + (rand * 90)) % 360;
-		ahead = aheadPosition(this.point, this.direction);
-		if(isFreeCell()) moveAhead();
-	}
 
 	public void goToWorkshop(){
 		System.out.println(number + " workshop");
@@ -209,13 +212,13 @@ public class Car extends Entity {
 		
 		if(hasRequest() && client()){
 			dropClient();
-			learn();	
+			//learn();	
 			requestsNotSucceed++;	
 		}
 		else if(hasRequest()){
 			this.central.pushPriorityRequest(this.request);
 			this.request = null;
-			learn();
+			//learn();
 		}
 		else if(this.park != null){
 			this.central.setCarParkingOccupied(this.park, false);
@@ -237,12 +240,12 @@ public class Car extends Entity {
 	}
 
 	public void nextPosition(){
-		System.out.println(number + " nextposition");
+
 		if(noBattery()){
 			goToWorkshop();
 			return;
 		}
-		
+
         int dx = destPoint.x - point.x;
         int dy = destPoint.y - point.y;
 
@@ -252,36 +255,68 @@ public class Car extends Entity {
 		Point moveInX = new Point(nextX, point.y);
 		Point moveInY = new Point(point.x, nextY);
 		
+		int rotateRight = (direction+90)%360; 
+		int rotateLeft = (direction-90+360)%360;
+		
+		Point aheadRight = aheadPosition(this.point, rotateRight);
+		Point aheadLeft = aheadPosition(this.point, rotateLeft);
+		Point aheadBehind = aheadPosition(aheadLeft, rotateLeft);
+		
 		
 		if (destPoint.equals(ahead)) completeDest();
+		
+		else if (destPoint.equals(aheadRight)) {
+			rotateRight();
+			completeDest();
+		}
+		
+		else if (destPoint.equals(aheadLeft)) {
+			rotateLeft();
+			completeDest();
+		}
+		
+		else if (destPoint.equals(aheadBehind)) {
+			rotateBehind();
+			completeDest();
+		}
 		
 		else if ((moveInX.equals(ahead) || moveInY.equals(ahead)) && isFreeCell()) moveAhead();
 		
 		else {
-			int rotateRight = (direction+90)%360; 
-			int rotateLeft = (direction-90+360)%360;
-			
-			Point aheadRight = aheadPosition(this.point, rotateRight);
-			Point aheadLeft = aheadPosition(this.point, rotateLeft);
-			
-			if(random.nextInt(5) != 0) {
-
-				if(moveInX.equals(aheadRight) || moveInY.equals(aheadRight)) {
-					rotateRight();
-					if (destPoint.equals(ahead)) completeDest();
-					else if(isFreeCell()) moveAhead();
+			if(moveInX.equals(aheadRight) || moveInY.equals(aheadRight)) {
+				rotateRight();
+				if(isFreeCell()) moveAhead();
+				else {
+					int i = 0;
+					while(!isFreeCell() && i < 5) {
+						rotateRandomly();
+						i += 1;
+					}
+					if(isFreeCell()) moveAhead();
 				}
-				
-				else if (moveInX.equals(aheadLeft) || moveInY.equals(aheadLeft)) {	
-					rotateLeft();
-					if (destPoint.equals(ahead)) completeDest();
-					else if(isFreeCell()) moveAhead();
-				}
-			
-				else { doRandMov(); stuck++;System.out.println("ENTROU");};
 			}
 			
-			else doRandMov();
+			else if(moveInX.equals(aheadLeft) || moveInY.equals(aheadLeft)) {	
+				rotateLeft();
+				if(isFreeCell()) moveAhead();
+				else {
+					int i = 0;
+					while(!isFreeCell() && i < 5) {
+						rotateRandomly();
+						i += 1;
+					}
+					if(isFreeCell()) moveAhead();
+				}
+			}
+			
+			else {
+				int i = 0;
+				while(!isFreeCell() && i < 5) {
+					rotateRandomly();
+					i += 1;
+				}
+				if(isFreeCell()) moveAhead();
+			}
 		}
 	}
 	
@@ -336,7 +371,7 @@ public class Car extends Entity {
 		//calculate the closest car park
 		for(CarParking park: carParkingsAvailable) {
 			int distance = manhattanDistance(this.point, park.point);
-			if(distance < minDistance){
+			if(distance < minDistance && (this.battery - minDistance) > threshold){
 				minDistance = distance;
 				closestCarParking = park;
 			}
@@ -361,7 +396,6 @@ public class Car extends Entity {
 			this.state = State.needCharger;
 			destPoint = closestCarParking.point;
 			this.park = closestCarParking;
-			this.central.setCarParkingOccupied(closestCarParking, true);
 		}
 
 		
