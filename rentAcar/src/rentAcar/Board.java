@@ -184,7 +184,7 @@ public class Board {
 			c.getRequest();
 			c.agentReactiveDecision();
 		}
-
+		//System.out.println("Threshold: " + cars.get(0).threshold);
 		displayObjects();
 		GUI.update();
 	}
