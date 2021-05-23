@@ -27,11 +27,12 @@ public class GUI extends JFrame {
 
 	private static final long serialVersionUID = 1L;
 	
-	static JTextField speed;
+	static JTextField speed, initialThreshold;
 	static JPanel boardPanel;
-	static JButton run, reset, step;
+	static JButton run, reset, step, setInitialThreshold;
 	private int nX, nY;
-	private ImageIcon image;
+	
+	static JLabel carsDown, satisfiedClients, unsatisfiedClients, batteryThreshold, giveAwayCarParking, meanWaitingTime;
 
 	public class Cell extends JPanel {
 
@@ -85,11 +86,20 @@ public class GUI extends JFrame {
 		setTitle("Rent-A-Car - Autonomous Solutions");		
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setLayout(null);
-		setSize(655, 725);
+		setSize(955, 725);
 		add(createButtonPanel());
+		
 		
 		Board.initialize();
 		Board.associateGUI(this);
+
+		add(carsDownPanel());
+		add(satisfiedClientsPanel());
+		add(unsatisfiedClientsPanel());
+		add(batteryThresholdPanel());
+		add(initialThreshold());
+		add(giveAwayCarParkingPanel());
+		add(meanWaitingTimePanel());
 		
 		boardPanel = new JPanel();
 		boardPanel.setSize(new Dimension(600,600));
@@ -135,6 +145,12 @@ public class GUI extends JFrame {
 		Cell p = (Cell)boardPanel.getComponent(row*nX+col);
 		p.setBorder(BorderFactory.createLineBorder(Color.white));			
 		p.entities.add(object);
+		carsDown.setText("Nr of times battery ran over: " + Board.getCarsDown());
+		satisfiedClients.setText("Satisfied clients: " + Board.getSatisfiedClients());
+		unsatisfiedClients.setText("Unsatisfied clients: " + Board.getUnsatisfiedClients());
+		batteryThreshold.setText("Learned battery threshold: " + Board.getThreshold());
+		giveAwayCarParking.setText("Nr of times parking has been given away: " + Board.getGiveAwayCarParking());
+		meanWaitingTime.setText("Mean waiting time for clients: " + Board.getMeanWaitTime());
 	}
 
 	public void update() {
@@ -189,5 +205,82 @@ public class GUI extends JFrame {
 		panel.add(speed);
 		
 		return panel;
+	}
+
+
+	private Component initialThreshold() {
+		JPanel panel = new JPanel();
+		panel.setSize(new Dimension(325,50));
+		panel.setLocation(new Point(637,150));
+
+		JLabel label = new JLabel("Initial battery threshold");
+		panel.add(label);
+		initialThreshold = new JTextField("40");
+		initialThreshold.setMargin(new Insets(5,5,5,5));
+		initialThreshold.setColumns(3);
+		Board.setInitialThreshold(Integer.parseInt(initialThreshold.getText()));
+		panel.add(initialThreshold);
+
+		setInitialThreshold = new JButton("Set");
+		panel.add(setInitialThreshold);
+		setInitialThreshold.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0){
+				try{
+					//System.out.println("hmm"+Integer.parseInt(initialThreshold.getText()));
+					Board.setInitialThreshold(Integer.parseInt(initialThreshold.getText()));
+					System.out.println("hospitals capacity randomness: " ); 
+				}catch(Exception e){
+					JTextPane output=new JTextPane();
+					output.setText("Please insert an valid integer value in Initial battery threshold\nValue inserted = " + initialThreshold.getText());
+					JOptionPane.showMessageDialog(null,output,"Error",JOptionPane.PLAIN_MESSAGE);
+				}
+			}
+		});
+
+		return panel;
+	}
+
+
+	private Component carsDownPanel() {
+		carsDown = new JLabel("Nr of times battery ran over: 0");
+		carsDown.setSize(new Dimension(500,50));
+		carsDown.setLocation(new Point(660,260));
+
+		return carsDown;
+	}
+
+	private Component satisfiedClientsPanel() {
+		satisfiedClients = new JLabel("Satisfied clients: 0");
+		satisfiedClients.setSize(new Dimension(500,50));
+		satisfiedClients.setLocation(new Point(660,280));
+		return satisfiedClients;
+	}
+
+	private Component unsatisfiedClientsPanel() {
+		unsatisfiedClients = new JLabel("Unsatisfied clients: 0");
+		unsatisfiedClients.setSize(new Dimension(500,50));
+		unsatisfiedClients.setLocation(new Point(660,300));
+		return unsatisfiedClients;
+	}
+
+	private Component meanWaitingTimePanel() {
+		meanWaitingTime = new JLabel("Mean waiting time for clients: 0");
+		meanWaitingTime.setSize(new Dimension(500,50));
+		meanWaitingTime.setLocation(new Point(660,320));
+		return meanWaitingTime;
+	}
+
+	private Component giveAwayCarParkingPanel() {
+		giveAwayCarParking = new JLabel("Nr of times parking has been given away: 0");
+		giveAwayCarParking.setSize(new Dimension(500,50));
+		giveAwayCarParking.setLocation(new Point(660,340));
+		return giveAwayCarParking;
+	}
+
+	private Component batteryThresholdPanel() {
+		batteryThreshold = new JLabel("Learned Battery threshold: 0");
+		batteryThreshold.setSize(new Dimension(500,50));
+		batteryThreshold.setLocation(new Point(660,360));
+		return batteryThreshold;
 	}
 }

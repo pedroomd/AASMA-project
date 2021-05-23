@@ -22,6 +22,8 @@ public class Board {
 	private static List<CarParking> carParkings;
 	private static List<Client> clients;
 	private static Workshop workshop;
+	private static int stepCounter = 1;
+	private static int initialThreshold = -1;
 
 	private static Random rand = new Random();
  
@@ -151,14 +153,8 @@ public class Board {
 		GUI.displayBoard();
 		displayObjects();	
 		GUI.update();
-	}
-
-	public static void sendMessage(Point point, Shape shape, Color color, boolean free) {
-		for(Car a : cars) a.receiveMessage(point, shape, color, free);		
-	}
-
-	public static void sendMessage(Action action, Point pt) {
-		for(Car a : cars) a.receiveMessage(action, pt);		
+		stepCounter = 0;
+		initialThreshold = -1;
 	}
 	
 	
@@ -170,7 +166,7 @@ public class Board {
 				int x = rand.nextInt(15);
 				int y = rand.nextInt(15);
 				if( board[x][y].shape.equals(Shape.free) && getEntity(new Point(x,y)) == null){
-					Request request = new Request(20, new Point(x,y));
+					Request request = new Request(20, new Point(x,y), stepCounter);
 					central.pushRequest(request);
 					Client client = new Client(new Point(x,y), Color.BLACK, request);
 					clients.add(client);
@@ -184,9 +180,9 @@ public class Board {
 			c.getRequest();
 			c.agentReactiveDecision();
 		}
-		//System.out.println("Threshold: " + cars.get(0).threshold);
 		displayObjects();
 		GUI.update();
+		stepCounter++;
 	}
 
 	public static void stop() {
@@ -216,6 +212,45 @@ public class Board {
 	public static void removeClient(Entity entity) {
 		clients.remove(entity);
 		GUI.removeObject(entity);
+	}
+
+	public static int getStepCounter(){
+		return stepCounter;
+	}
+
+	public static void setInitialThreshold(int threshold){
+		
+		for(Car car: cars) car.setThreshold(threshold);
+		initialThreshold = threshold;
+
+	}
+
+	public static int getInitialThreshold(){
+		return initialThreshold;
+	}
+
+	public static int getCarsDown(){
+		return central.getCarsDown();
+	}
+
+	public static int getSatisfiedClients(){
+		return central.getSatisfiedClients();
+	}
+
+	public static int getUnsatisfiedClients(){
+		return central.getUnsatisfiedClients();
+	}
+
+	public static long getThreshold(){
+		return cars.get(0).threshold;
+	}
+
+	public static int getGiveAwayCarParking(){
+		return central.getGiveAwayCarParking();
+	}
+
+	public static double getMeanWaitTime(){
+		return central.getMeanWaitTime();
 	}
 
 }

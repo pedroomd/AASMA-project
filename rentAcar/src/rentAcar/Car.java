@@ -28,7 +28,7 @@ public class Car extends Entity {
 	//
 	public enum State {charging, startRequest, occupied, nonOccupied, needCharger, noBattery }
 	public static int maxBattery = 200;
-	public long threshold = 120;
+	public long threshold = 40;
 	public int number;
 	public State state = State.nonOccupied;
 	public int direction = 90;
@@ -41,8 +41,7 @@ public class Car extends Entity {
 	public CarParking park = null;
 	public Point destPoint = null;
 	public Workshop workshop = null;
-	public int requestsNotSucceed = 0;
-	public int stuck = 0;
+	public int clientWaitingSteps = 0;
 	
 
     public Car(Point point, Color color, int number) {
@@ -163,10 +162,12 @@ public class Car extends Entity {
 		}
 		
 		else if(this.battery >= maxBattery || central.getCarParking(this.park).getHasArrived()){
+			if(central.getCarParking(this.park).getHasArrived()) this.central.giveAwayCarParking();
 			this.state = State.nonOccupied;
 			park = null;
 			this.color = Color.pink;
 			if(this.battery >= maxBattery) this.battery = maxBattery;
+			
 			
 		} 
 
@@ -230,12 +231,12 @@ public class Car extends Entity {
 	
 
 	public void goToWorkshop(){
-		//System.out.println(number + " workshop");
+		
 		this.state = State.noBattery;
 		
 		if(hasRequest() && client()){
 			dropClient();
-			requestsNotSucceed++;
+			this.central.increUnsatisfiedClients();
 			if(this.learning){
 				this.result = Result.clientFailure;
 				learn();
@@ -274,6 +275,7 @@ public class Car extends Entity {
 	}
 
 	public void nextPosition(){
+		
 		if(noBattery()){
 			goToWorkshop();
 			return;
@@ -385,19 +387,21 @@ public class Car extends Entity {
 		client = (Client) Board.getEntity(ahead);
 		client.grab(point);
 		distanceLeft = client.getRequest().getTravelDistance();
+		this.central.updateWaitTime(this.request.getRequestStep());
 	}
 	
 	public void dropClient() {
-		//System.out.println(number + " dropclient");
+		
 		this.client.drop();
 	    this.client = null;
 	    this.request = null;
 	    this.state = State.nonOccupied;
+		if(distanceComplete()) this.central.increSatisfiedClients();
 		
 	}
 
 	public void searchCarParking(){
-		//System.out.println(number + " searchcarparking");
+		
 		List<CarParking> carParkingsAvailable =  central.getAvailableCarParkings();
 		CarParking closestCarParking = null;
 		int minDistance = Integer.MAX_VALUE;
@@ -447,7 +451,7 @@ public class Car extends Entity {
 		List<Car> cars = central.getCars();
 		boolean closestCar = true;
 		
-		if(this.state == State.charging || this.state == State.nonOccupied) {
+		if((this.state == State.charging && this.battery >= threshold) || this.state == State.nonOccupied) {
 			for(Request r : requestsAvailable) {
 				int minDistance = manhattanDistance(this.point, r.getClientPoint());
 				double random = Math.random();

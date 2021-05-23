@@ -9,6 +9,12 @@ public class Central {
     private List<Request> requests;
     private List<Car> cars;
     private Workshop workshop;
+    private int carsDown = 0;
+    private int satisfiedClients = 0;
+    private int unsatisfiedClients = 0;
+    private int giveAwayCarParking = 0;
+    private int totalRequest = 0;
+    private double meanWaitingTime = 0;
 
     public Central(List<CarParking> carParkings, List<Car> cars, Workshop workshop){
         this.carParkings = carParkings;
@@ -86,13 +92,50 @@ public class Central {
 
     public void changeWorkshopOccupied(){
         this.workshop.changeOccupied();
+        if(this.workshop.isOccupied()) carsDown++;
     }
 
     public int numberOfcars(){
         return cars.size();
     }
 
-    public void sendThreshold(long threshold){
-
+    public int getCarsDown(){
+        return this.carsDown;
     }
+
+    public int getSatisfiedClients(){
+        return this.satisfiedClients;
+    }
+
+
+    public int getUnsatisfiedClients(){
+        return this.unsatisfiedClients;
+    }
+
+    public int getGiveAwayCarParking(){
+        return this.giveAwayCarParking;
+    }
+
+    public void increSatisfiedClients(){
+        this.satisfiedClients++;
+    }
+
+    public void increUnsatisfiedClients(){
+        this.unsatisfiedClients++;
+    }
+
+    public void giveAwayCarParking(){
+        this.giveAwayCarParking++;
+    }
+
+    public void updateWaitTime(int stepRequest){
+        int difference = Board.getStepCounter() - stepRequest;
+        this.meanWaitingTime = (this.meanWaitingTime * this.totalRequest + difference) / (this.totalRequest + 1);
+        this.totalRequest++;
+    }
+
+    public double getMeanWaitTime(){
+        return this.meanWaitingTime;
+    }
+
 }
