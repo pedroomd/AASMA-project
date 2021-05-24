@@ -165,8 +165,9 @@ public class Board {
 			if(rand.nextBoolean()){
 				int x = rand.nextInt(15);
 				int y = rand.nextInt(15);
+				int travelDistance = (rand.nextInt(5) + 1) * 10;
 				if( board[x][y].shape.equals(Shape.free) && getEntity(new Point(x,y)) == null){
-					Request request = new Request(20, new Point(x,y), stepCounter);
+					Request request = new Request(travelDistance, new Point(x,y), stepCounter);
 					central.pushRequest(request);
 					Client client = new Client(new Point(x,y), Color.BLACK, request);
 					clients.add(client);
