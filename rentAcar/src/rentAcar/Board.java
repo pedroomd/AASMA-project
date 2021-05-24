@@ -6,6 +6,9 @@ import java.util.ArrayList;
 import java.util.List;
 import rentAcar.Block.Shape;
 import java.util.*;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 
 public class Board {
 
@@ -24,6 +27,15 @@ public class Board {
 	private static Workshop workshop;
 	private static int stepCounter = 1;
 	private static int initialThreshold = -1;
+
+	//statistic variables
+	private static FileWriter csvWriter;
+	private static String CURRENTDIRECTORY = System.getProperty("/Users/pedromd/Desktop/AASMA-project");
+    private static File LOGSDIRECTORY = new File(CURRENTDIRECTORY, "logs");
+	private static int lastCarsDown;
+	private static int lastSatisfiedClients;
+	private static int lastUnsatisfiedClients;
+	private static long lastThreshold;
 
 	private static Random rand = new Random();
  
@@ -88,6 +100,10 @@ public class Board {
 		}
 		//workshop
 		board[workshop.location.x][workshop.location.y] = new Block(Shape.workshop, Color.gray);
+
+		if (!LOGSDIRECTORY.exists()){
+            LOGSDIRECTORY.mkdir();
+		}
 	}
 	
 	/****************************
@@ -140,6 +156,7 @@ public class Board {
 				}
 	    	}
 	    }
+
 	}
 	
 	public static void run(int time) {
@@ -182,8 +199,57 @@ public class Board {
 		}
 		displayObjects();
 		GUI.update();
+
+		if(stepCounter % 100 == 0) logData();
+		
 		stepCounter++;
 	}
+
+	public static void logData(){
+		try{
+			String filename = "";
+			filename += stepCounter + "_" + lastCarsDown + "_" + lastSatisfiedClients + "_" + lastUnsatisfiedClients + "_" + lastThreshold + ".csv";
+
+			csvWriter = new FileWriter(LOGSDIRECTORY + "/" + filename, true);
+			csvWriter.append("Number of cars that battery ran out");
+			csvWriter.append(",");
+			csvWriter.append("Satisfied clients");
+			csvWriter.append(",");
+			csvWriter.append("Unsatisfied clients");
+			csvWriter.append(",");
+			csvWriter.append("Learned battery threshold");
+			csvWriter.append("\n");
+
+		} catch(Exception e){
+			e.printStackTrace();
+		}
+
+		List<List<String>> dataLines = new ArrayList<>();
+		dataLines.add(Arrays.asList(
+				String.valueOf(getCarsDown() - lastCarsDown),
+				String.valueOf(getSatisfiedClients() - lastSatisfiedClients),
+				String.valueOf(getUnsatisfiedClients() - lastUnsatisfiedClients),
+				String.valueOf(getThreshold() - lastThreshold)));
+
+
+		try {
+			for (List<String> rowData : dataLines) {
+				csvWriter.append(String.join(",",  rowData));
+				csvWriter.append("\n");
+			}
+
+			csvWriter.flush();
+
+		} catch(IOException e) {
+			e.printStackTrace();
+		}
+
+		lastCarsDown = getCarsDown();
+		lastSatisfiedClients = getSatisfiedClients();
+		lastUnsatisfiedClients = getUnsatisfiedClients();
+		lastThreshold = getThreshold();
+	}
+
 
 	public static void stop() {
 		runThread.interrupt();

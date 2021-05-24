@@ -514,7 +514,7 @@ public class Car extends Entity {
 					case requestFailure:
 						return this.request.getTravelDistance() + manhattanDistance(this.point, this.request.getClientPoint())*5;
 					default: 
-						return 5;
+						return 0;
 				}
 			}
 			
