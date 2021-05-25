@@ -19,7 +19,7 @@ public class Car extends Entity {
 	public int batteryToPark = 0;
 	public double epsilon = 0.9;
 	public boolean learning = false;
-	public int total = 100;
+	public int total = 1000;
 	public double dec;
 	public int maxBatteryWasted  = 0;
 	public int distanceRequired;
@@ -28,7 +28,8 @@ public class Car extends Entity {
 	//
 	public enum State {charging, startRequest, occupied, nonOccupied, needCharger, noBattery }
 	public static int maxBattery = 200;
-	public long threshold = 40;
+	private static int defaultReward = 0;
+	public long threshold = 100;
 	public int number;
 	public State state = State.nonOccupied;
 	public int direction = 90;
@@ -42,6 +43,7 @@ public class Car extends Entity {
 	public Point destPoint = null;
 	public Workshop workshop = null;
 	public int clientWaitingSteps = 0;
+	public int stuck = 0;
 	
 
     public Car(Point point, Color color, int number) {
@@ -60,18 +62,21 @@ public class Car extends Entity {
 	public void setThreshold(long threshold){
 		this.threshold = threshold;
 	}
+
+	public void setEpsilon(double epsilon){
+		this.epsilon = epsilon;
+	}
 	
 	public void setMaxBatteryWasted(int maxBatteryWasted){
 		this.maxBatteryWasted = maxBatteryWasted;
-		System.out.println(this.maxBatteryWasted);
 	}
     
-    public void agentReactiveDecision() {
+    public void agentDecision() {
     	
 	  	ahead = aheadPosition(this.point, this.direction);
-		if(number == 1) System.out.println(number + " " + threshold);
 	  	changeCarColor();
 		if(isCharging()) charge();
+		else if(isStuck()){ doRandMove(); this.stuck = 0;}
 		else if(hasDestPoint()) nextPosition();
 		else if((lowBattery() || this.learning) && this.state == State.nonOccupied) searchCarParking();
 	  	else if(distanceComplete() && this.state == State.occupied) dropClient();
@@ -86,6 +91,10 @@ public class Car extends Entity {
         else if (battery >= threshold) this.color = Color.pink;
         else if(battery <= threshold)this.color = color.yellow;
     }
+
+	public boolean isStuck(){
+		return this.stuck == 5;
+	}
     
     public boolean isFreeCell() {
 
@@ -151,7 +160,7 @@ public class Car extends Entity {
 	}
 
 	public void charge(){
-		
+		//System.out.println(number + " charge");
 		if(this.battery >= threshold && this.central.getCarParking(this.park).isOccupied()) {
 			this.central.setCarParkingOccupied(park, false);
 		}
@@ -215,11 +224,12 @@ public class Car extends Entity {
 					this.batteryWasted = this.batteryToPark - this.battery;
 					learn();
 				} 
-				
+				this.stuck = 0;
 			}
 			
 			else {
 				this.central.setCarParkingHasArrived(this.park, true);
+				this.stuck++;
 			}
 		}
 		else if(this.state.equals(State.startRequest) && isClient()){
@@ -231,7 +241,7 @@ public class Car extends Entity {
 	
 
 	public void goToWorkshop(){
-		
+		//System.out.println(number + " workshop");
 		this.state = State.noBattery;
 		
 		if(hasRequest() && client()){
@@ -273,9 +283,20 @@ public class Car extends Entity {
 			this.direction = random.nextBoolean() ? 180 : 270;
 		}
 	}
+	
+	private void doRandMove() {
+		int i = 0;
+		while(!isFreeCell() && i < 5) {
+			rotateRandomly();
+			i += 1;
+		}
+		if(isFreeCell()) moveAhead();
+	}
 
 	public void nextPosition(){
-		
+		//System.out.println(number + " nextPosition");
+
+
 		if(noBattery()){
 			goToWorkshop();
 			return;
@@ -321,37 +342,16 @@ public class Car extends Entity {
 			if(moveInX.equals(aheadRight) || moveInY.equals(aheadRight)) {
 				rotateRight();
 				if(isFreeCell()) moveAhead();
-				else {
-					int i = 0;
-					while(!isFreeCell() && i < 5) {
-						rotateRandomly();
-						i += 1;
-					}
-					if(isFreeCell()) moveAhead();
-				}
+				else doRandMove();
 			}
 			
 			else if(moveInX.equals(aheadLeft) || moveInY.equals(aheadLeft)) {	
 				rotateLeft();
 				if(isFreeCell()) moveAhead();
-				else {
-					int i = 0;
-					while(!isFreeCell() && i < 5) {
-						rotateRandomly();
-						i += 1;
-					}
-					if(isFreeCell()) moveAhead();
-				}
+				else doRandMove();
 			}
 			
-			else {
-				int i = 0;
-				while(!isFreeCell() && i < 5) {
-					rotateRandomly();
-					i += 1;
-				}
-				if(isFreeCell()) moveAhead();
-			}
+			else doRandMove();
 		}
 	}
 	
@@ -363,6 +363,7 @@ public class Car extends Entity {
 			this.central.changeWorkshopOccupied();
 		}	
 		Board.updateEntityPosition(point,ahead);
+
 		if(client()) {
 			client.move(ahead); 
 			distanceLeft -= 5;
@@ -391,7 +392,7 @@ public class Car extends Entity {
 	}
 	
 	public void dropClient() {
-		
+		//System.out.println(number + " drop");
 		this.client.drop();
 	    this.client = null;
 	    this.request = null;
@@ -401,7 +402,7 @@ public class Car extends Entity {
 	}
 
 	public void searchCarParking(){
-		
+		//System.out.println(number + " searchCarParking");
 		List<CarParking> carParkingsAvailable =  central.getAvailableCarParkings();
 		CarParking closestCarParking = null;
 		int minDistance = Integer.MAX_VALUE;
@@ -473,12 +474,11 @@ public class Car extends Entity {
 						
 						if(!((battery - r.getTravelDistance() - minDistance) > threshold)){
 							dec = (epsilon-0.1)/total;
-							epsilon -= dec;
+							if(epsilon - dec > 0.05) epsilon -= dec;
 							System.out.println(epsilon);
 							this.learning = true;
 							this.distanceRequired = this.request.getTravelDistance() + minDistance;
 							this.startBattery = this.battery;
-							System.out.println(number + " :VAI APRENDER CARALHO!!!");
 						} 
 						break;
 					}
@@ -494,27 +494,23 @@ public class Car extends Entity {
 		if(this.maxBatteryWasted == 0) this.maxBatteryWasted = this.batteryWasted;
 		if(this.parkAchieved){
 			if(this.batteryWasted < this.threshold){
-				System.out.println("batterywasted: " + this.batteryWasted);
 				double importance = ((double)this.batteryWasted / this.maxBatteryWasted);
-				System.out.println("importance: " + importance);
-				System.out.println("max: " + this.maxBatteryWasted);
 				return Math.round((this.batteryWasted - this.threshold) * importance);
 			}
 			else return 0;
 		}
 		else{
 			if(this.batteryWasted > this.threshold){
-				System.out.println("FILHOS DA PUTAAAAAAAAAAAA");
 				return this.batteryWasted - this.threshold;
 			}
 			else{
 				switch(result){
 					case clientFailure:
-						return this.distanceLeft;
+						return defaultReward + this.distanceLeft;
 					case requestFailure:
-						return this.request.getTravelDistance() + manhattanDistance(this.point, this.request.getClientPoint())*5;
+						return defaultReward + this.request.getTravelDistance() + manhattanDistance(this.point, this.request.getClientPoint())*5;
 					default: 
-						return 0;
+						return defaultReward;
 				}
 			}
 			
@@ -532,7 +528,6 @@ public class Car extends Entity {
 		}
 
 		long u = reward(this.result);
-		System.out.println(number + " reward: " + u);
 		int carsNumber = this.central.numberOfcars();
 		double learned = u * learningRate;
 		threshold = Math.round((threshold + learned + (carsNumber - 1)*threshold) / carsNumber);
