@@ -6,6 +6,12 @@ import java.util.ArrayList;
 import java.util.List;
 import rentAcar.Block.Shape;
 import java.util.*;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Calendar;
 
 public class Board {
 
@@ -24,6 +30,17 @@ public class Board {
 	private static Workshop workshop;
 	private static int stepCounter = 1;
 	private static int initialThreshold = -1;
+
+	public enum CarsBehavior {Conservative, Risky}
+
+	//statistic variables
+	private static FileWriter csvWriter;
+	private static String CURRENTDIRECTORY = System.getProperty("/Users/pedromd/Desktop/AASMA-project");
+    private static File LOGSDIRECTORY = new File(CURRENTDIRECTORY, "logs");
+	private static int lastCarsDown;
+	private static int lastSatisfiedClients;
+	private static int lastUnsatisfiedClients;
+	private static double lastMeanWaitTime;
 
 	private static Random rand = new Random();
  
@@ -88,6 +105,32 @@ public class Board {
 		}
 		//workshop
 		board[workshop.location.x][workshop.location.y] = new Block(Shape.workshop, Color.gray);
+
+		if (!LOGSDIRECTORY.exists()){
+            LOGSDIRECTORY.mkdir();
+		}
+		//creating csv
+		try{
+			String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(Calendar.getInstance().getTime());
+			String filename = timeStamp + ".csv";
+
+			csvWriter = new FileWriter(LOGSDIRECTORY + "/" + filename, true);
+			csvWriter.append("Step");
+			csvWriter.append(";");
+			csvWriter.append("Number of cars that battery ran out");
+			csvWriter.append(";");
+			csvWriter.append("Satisfied clients");
+			csvWriter.append(";");
+			csvWriter.append("Unsatisfied clients");
+			csvWriter.append(";");
+			csvWriter.append("Learned battery threshold");
+			csvWriter.append(";");
+			csvWriter.append("Mean waiting time for clients");
+			csvWriter.append("\n");
+
+		} catch(Exception e){
+			e.printStackTrace();
+		}
 	}
 	
 	/****************************
@@ -101,9 +144,6 @@ public class Board {
 		return board[point.x][point.y];
 	}
 	public static void updateEntityPosition(Point point, Point newpoint) {
-		if(objects[point.x][point.y] instanceof Client){
-			System.out.println("DO TIPO CLIENTE");
-		}
 		objects[newpoint.x][newpoint.y] = objects[point.x][point.y];
 		objects[point.x][point.y] = null;
 	}	
@@ -140,6 +180,7 @@ public class Board {
 				}
 	    	}
 	    }
+
 	}
 	
 	public static void run(int time) {
@@ -179,12 +220,51 @@ public class Board {
 		
 		for(Car c : cars){
 			c.getRequest();
-			c.agentReactiveDecision();
+			c.agentDecision();
 		}
 		displayObjects();
 		GUI.update();
+		/*
+		for(int i = 0; i < objects.length; i++){
+			for(int j = 0; j < objects[i].length; j++){
+				if(objects[i][j] != null) System.out.println("FOI: " + objects[i][j].point.x + " " + objects[i][j].point.y );
+			}
+		}*/
+
+		if(stepCounter % 100 == 1) logData();
+		
 		stepCounter++;
 	}
+
+	public static void logData(){
+
+		List<List<String>> dataLines = new ArrayList<>();
+		dataLines.add(Arrays.asList(
+				String.valueOf(stepCounter - 1),
+				String.valueOf(getCarsDown() - lastCarsDown),
+				String.valueOf(getSatisfiedClients() - lastSatisfiedClients),
+				String.valueOf(getUnsatisfiedClients() - lastUnsatisfiedClients),
+				String.valueOf(getThreshold()),
+				String.format("%.2f", getMeanWaitTime())));
+
+
+		try {
+			for (List<String> rowData : dataLines) {
+				csvWriter.append(String.join(";",  rowData));
+				csvWriter.append("\n");
+			}
+
+			csvWriter.flush();
+
+		} catch(IOException e) {
+			e.printStackTrace();
+		}
+
+		lastCarsDown = getCarsDown();
+		lastSatisfiedClients = getSatisfiedClients();
+		lastUnsatisfiedClients = getUnsatisfiedClients();
+	}
+
 
 	public static void stop() {
 		runThread.interrupt();
@@ -194,6 +274,8 @@ public class Board {
 	public synchronized static void displayObjects(){
 		for(Car c : cars) GUI.displayObject(c);
 		for(Client c: clients) GUI.displayObject(c);
+
+
 	}
 	
 	public synchronized static void removeObjects(){
@@ -212,7 +294,7 @@ public class Board {
 	
 	public synchronized static void removeClient(Entity entity) {
 		clients.remove(entity);
-		GUI.removeObject(entity);
+		//GUI.removeObject(entity);
 	}
 
 	public static int getStepCounter(){
@@ -252,6 +334,29 @@ public class Board {
 
 	public static double getMeanWaitTime(){
 		return central.getMeanWaitTime();
+	}
+
+	public static void removeObject(Entity entity){
+		GUI.removeObject(entity);
+	}
+
+	public static void displayObject(Entity entity){
+		GUI.displayObject(entity);
+	}
+
+	public static void setCarsBehavior(CarsBehavior behavior){
+		if(behavior.equals(CarsBehavior.Conservative)){
+			for(Car car: cars){
+				car.setThreshold(100); 
+				car.setEpsilon(-1);
+			}
+		}
+		else if(behavior.equals(CarsBehavior.Risky)){
+			for(Car car: cars){
+				car.setThreshold(initialThreshold);
+				car.setEpsilon(0.9);
+			}
+		}
 	}
 
 }
