@@ -10,6 +10,7 @@ import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
@@ -42,41 +43,42 @@ public class GUI extends JFrame {
 		
 		
         @Override
-        protected void paintComponent(Graphics g) {
-            super.paintComponent(g);
-            for(Entity entity : entities) {
-				g.setColor(entity.color);
-				//System.out.println(entity.color);
-				if(entity instanceof Client) {
-					g.fillOval(12, 12, 17, 17);
-		            g.setColor(Color.white);
-	            	g.drawOval(12, 12, 17, 17);
+        protected synchronized void paintComponent(Graphics g) {
+        	super.paintComponent(g);
+        	List<Entity> entitiesClone = new ArrayList<Entity>(entities);
+            for(Entity entity : entitiesClone) {
+            	if(entity != null) {
+            		g.setColor(entity.color);
+    				if(entity instanceof Client) {
+    					g.fillOval(12, 12, 17, 17);
+    		            g.setColor(Color.white);
+    	            	g.drawOval(12, 12, 17, 17);
 
-				}
-				else{
-					switch(((Car)entity).direction) {
-		    			case 0:  
-							g.fillPolygon(new int[]{7, 22, 37}, new int[]{37, 7, 37}, 3);
-							g.setColor(Color.BLACK); 
-							g.drawString(Integer.toString(((Car)entity).number), 17, 28);
-							//g.setColor(Color.BLACK); 
-							break;
-		    			case 90: 
-							g.fillPolygon(new int[]{8, 38, 8}, new int[]{7, 22, 37}, 3);
-							g.setColor(Color.BLACK); 
-							g.drawString(Integer.toString(((Car)entity).number), 15, 27);
-							break;
-		    			case 180:
-							g.fillPolygon(new int[]{10, 40, 25}, new int[]{7, 7, 37}, 3);
-							g.setColor(Color.BLACK); 
-							g.drawString(Integer.toString(((Car)entity).number), 20, 24); 
-							break;
-		    			default: 
-							g.fillPolygon(new int[]{8, 38, 38}, new int[]{22, 7, 37}, 3);
-							g.setColor(Color.BLACK); 
-							g.drawString(Integer.toString(((Car)entity).number), 22, 26);  
-		    		}
-				}
+    				}
+    				else{
+    					switch(((Car)entity).direction) {
+    		    			case 0:  
+    							g.fillPolygon(new int[]{7, 22, 37}, new int[]{37, 7, 37}, 3);
+    							g.setColor(Color.BLACK); 
+    							g.drawString(Integer.toString(((Car)entity).number), 17, 28);
+    							break;
+    		    			case 90: 
+    							g.fillPolygon(new int[]{8, 38, 8}, new int[]{7, 22, 37}, 3);
+    							g.setColor(Color.BLACK); 
+    							g.drawString(Integer.toString(((Car)entity).number), 15, 27);
+    							break;
+    		    			case 180:
+    							g.fillPolygon(new int[]{10, 40, 25}, new int[]{7, 7, 37}, 3);
+    							g.setColor(Color.BLACK); 
+    							g.drawString(Integer.toString(((Car)entity).number), 20, 24); 
+    							break;
+    		    			default: 
+    							g.fillPolygon(new int[]{8, 38, 38}, new int[]{22, 7, 37}, 3);
+    							g.setColor(Color.BLACK); 
+    							g.drawString(Integer.toString(((Car)entity).number), 22, 26);  
+    		    		}
+    				}
+            	}
             }
         }
 	}

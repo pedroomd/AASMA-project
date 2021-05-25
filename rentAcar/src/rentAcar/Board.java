@@ -158,8 +158,8 @@ public class Board {
 	}
 	
 	
-	public static void step() {
-		removeObjects();
+	public static synchronized void step() {
+		
 		if(clients.size() < max_clients){
 			//50% of a new client
 			if(rand.nextBoolean()){
@@ -175,7 +175,7 @@ public class Board {
 				}
 			}
 		}
-		
+		removeObjects();
 		
 		for(Car c : cars){
 			c.getRequest();
@@ -191,12 +191,12 @@ public class Board {
 		runThread.stop();
 	}
 
-	public static void displayObjects(){
+	public synchronized static void displayObjects(){
 		for(Car c : cars) GUI.displayObject(c);
 		for(Client c: clients) GUI.displayObject(c);
 	}
 	
-	public static void removeObjects(){
+	public synchronized static void removeObjects(){
 		for(Car c : cars) GUI.removeObject(c);
 		for(Client c : clients) GUI.removeObject(c);
 	}
@@ -210,7 +210,7 @@ public class Board {
 				( j == 1 && i == 6) || ( j == 1 && i >= 11) || ( j == 2 && i >= 13) || ( i == 14 && j <= 5) );
 	}
 	
-	public static void removeClient(Entity entity) {
+	public synchronized static void removeClient(Entity entity) {
 		clients.remove(entity);
 		GUI.removeObject(entity);
 	}
