@@ -16,13 +16,12 @@ public class Client extends Entity {
 	 ***** AUXILIARY METHODS ***** 
 	 *****************************/
 
-	public synchronized void grab(Point newpoint) {
+	public void grab(Point newpoint) {
 		Board.removeEntity(point);
 		point = newpoint;
 	}
 	
-	public synchronized void drop() {
-		//Board.removeEntity(point);
+	public void drop() {
 		Board.removeClient(this);
 	}
 

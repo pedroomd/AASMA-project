@@ -30,8 +30,9 @@ public class Board {
 	private static Workshop workshop;
 	private static int stepCounter = 1;
 	private static int initialThreshold = -1;
-
 	public enum CarsBehavior {Conservative, Risky}
+	private static CarsBehavior carsBehavior;
+
 
 	//statistic variables
 	private static FileWriter csvWriter;
@@ -117,7 +118,7 @@ public class Board {
 			csvWriter = new FileWriter(LOGSDIRECTORY + "/" + filename, true);
 			csvWriter.append("Step");
 			csvWriter.append(";");
-			csvWriter.append("Number of cars that battery ran out");
+			csvWriter.append("Nr of cars that battery ran out");
 			csvWriter.append(";");
 			csvWriter.append("Satisfied clients");
 			csvWriter.append(";");
@@ -125,12 +126,15 @@ public class Board {
 			csvWriter.append(";");
 			csvWriter.append("Learned battery threshold");
 			csvWriter.append(";");
+			csvWriter.append("Nr of times parking has been given up");
+			csvWriter.append(";");
 			csvWriter.append("Mean waiting time for clients");
 			csvWriter.append("\n");
 
 		} catch(Exception e){
 			e.printStackTrace();
 		}
+
 	}
 	
 	/****************************
@@ -199,39 +203,38 @@ public class Board {
 	}
 	
 	
-	public static synchronized void step() {
-		
+	public static void step() {
+		removeObjects();
 		if(clients.size() < max_clients){
 			//50% of a new client
 			if(rand.nextBoolean()){
 				int x = rand.nextInt(15);
 				int y = rand.nextInt(15);
+				Point pointRandom = new Point(x,y);
 				int travelDistance = (rand.nextInt(5) + 1) * 10;
-				if( board[x][y].shape.equals(Shape.free) && getEntity(new Point(x,y)) == null){
-					Request request = new Request(travelDistance, new Point(x,y), stepCounter);
+				if( board[x][y].shape.equals(Shape.free) && getEntity(pointRandom) == null){
+					Request request = new Request(travelDistance, pointRandom, stepCounter);
 					central.pushRequest(request);
-					Client client = new Client(new Point(x,y), Color.BLACK, request);
+					Client client = new Client(pointRandom, Color.BLACK, request);
 					clients.add(client);
 					objects[x][y] = client;
 				}
 			}
 		}
-		removeObjects();
+		
 		
 		for(Car c : cars){
 			c.getRequest();
 			c.agentDecision();
 		}
+
 		displayObjects();
 		GUI.update();
-		/*
-		for(int i = 0; i < objects.length; i++){
-			for(int j = 0; j < objects[i].length; j++){
-				if(objects[i][j] != null) System.out.println("FOI: " + objects[i][j].point.x + " " + objects[i][j].point.y );
-			}
-		}*/
+	
+		
 
 		if(stepCounter % 100 == 1) logData();
+		if(stepCounter == 50001) stop();
 		
 		stepCounter++;
 	}
@@ -241,10 +244,11 @@ public class Board {
 		List<List<String>> dataLines = new ArrayList<>();
 		dataLines.add(Arrays.asList(
 				String.valueOf(stepCounter - 1),
-				String.valueOf(getCarsDown() - lastCarsDown),
-				String.valueOf(getSatisfiedClients() - lastSatisfiedClients),
-				String.valueOf(getUnsatisfiedClients() - lastUnsatisfiedClients),
+				String.valueOf(getCarsDown()),
+				String.valueOf(getSatisfiedClients()),
+				String.valueOf(getUnsatisfiedClients()),
 				String.valueOf(getThreshold()),
+				String.valueOf(getGiveAwayCarParking()),
 				String.format("%.2f", getMeanWaitTime())));
 
 
@@ -259,10 +263,10 @@ public class Board {
 		} catch(IOException e) {
 			e.printStackTrace();
 		}
-
+		/*
 		lastCarsDown = getCarsDown();
 		lastSatisfiedClients = getSatisfiedClients();
-		lastUnsatisfiedClients = getUnsatisfiedClients();
+		lastUnsatisfiedClients = getUnsatisfiedClients();*/
 	}
 
 
@@ -271,14 +275,14 @@ public class Board {
 		runThread.stop();
 	}
 
-	public synchronized static void displayObjects(){
+	public static void displayObjects(){
 		for(Car c : cars) GUI.displayObject(c);
 		for(Client c: clients) GUI.displayObject(c);
 
 
 	}
 	
-	public synchronized static void removeObjects(){
+	public static void removeObjects(){
 		for(Car c : cars) GUI.removeObject(c);
 		for(Client c : clients) GUI.removeObject(c);
 	}
@@ -292,7 +296,7 @@ public class Board {
 				( j == 1 && i == 6) || ( j == 1 && i >= 11) || ( j == 2 && i >= 13) || ( i == 14 && j <= 5) );
 	}
 	
-	public synchronized static void removeClient(Entity entity) {
+	public static void removeClient(Entity entity) {
 		clients.remove(entity);
 		//GUI.removeObject(entity);
 	}
@@ -346,16 +350,14 @@ public class Board {
 
 	public static void setCarsBehavior(CarsBehavior behavior){
 		if(behavior.equals(CarsBehavior.Conservative)){
-			for(Car car: cars){
-				car.setThreshold(100); 
-				car.setEpsilon(-1);
-			}
+			for(Car car: cars) car.setThreshold(100); 
+			central.setEpsilon(-1);
+			carsBehavior = CarsBehavior.Conservative;
 		}
 		else if(behavior.equals(CarsBehavior.Risky)){
-			for(Car car: cars){
-				car.setThreshold(initialThreshold);
-				car.setEpsilon(0.9);
-			}
+			for(Car car: cars) car.setThreshold(initialThreshold);
+			central.setEpsilon(0.9);
+			carsBehavior = CarsBehavior.Risky;
 		}
 	}
 

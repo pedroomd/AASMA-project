@@ -3,7 +3,6 @@ package rentAcar;
 import java.awt.*;
 
 public class Request {
-
     private int travelDistance;
     private Point clientPoint;
     private int requestStep;

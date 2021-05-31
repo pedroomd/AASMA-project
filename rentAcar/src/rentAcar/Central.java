@@ -9,6 +9,9 @@ public class Central {
     private List<Request> requests;
     private List<Car> cars;
     private Workshop workshop;
+    private double epsilon;
+    private double dec;
+    private int total = 1000;
     private int carsDown = 0;
     private int satisfiedClients = 0;
     private int unsatisfiedClients = 0;
@@ -29,6 +32,10 @@ public class Central {
 
     public void setCars(List<Car> cars){
     	this.cars = cars;
+    }
+
+    public void setEpsilon(double epsilon){
+        this.epsilon = epsilon;
     }
     
     public List<Request> getRequests(){
@@ -136,6 +143,15 @@ public class Central {
 
     public double getMeanWaitTime(){
         return this.meanWaitingTime;
+    }
+
+    public void updateEpsilon(){
+        dec = (epsilon-0.1)/total;
+		if(epsilon - dec > 0.05) epsilon -= dec;
+    }
+
+    public double getEpsilon(){
+        return this.epsilon;
     }
 
 }
