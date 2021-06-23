@@ -2,26 +2,35 @@ package rentAcar;
 
 import java.awt.*;
 
-public class CarParking extends Entity {
-
+public class CarParking extends Block {
+	
+	public Point point;
     public boolean occupied = false;
+    public boolean hasArrived = false;
     
-<<<<<<< HEAD
     public CarParking(Point point, Shape shape, Color color){
         super(shape, color);
         this.point = point;
 
-=======
-    public CarParking(Point point, Color color){
-        super(point, color);
->>>>>>> parent of eba18df (hhh)
     }
 
-    public void changeOccupied(){
-        this.occupied = !this.occupied;
+    public void changeOccupied(boolean bool){
+        this.occupied = bool;
     }
 
     public boolean isOccupied(){
         return occupied;
+    }
+    
+    public Point getPoint() {
+    	return this.point;
+    }
+    
+    public boolean getHasArrived() {
+    	return this.hasArrived;
+    }
+    
+    public void setHasArrived(boolean bool) {
+    	this.hasArrived = bool;
     }
 }

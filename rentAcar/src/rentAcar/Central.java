@@ -3,13 +3,21 @@ package rentAcar;
 import java.util.List;
 import java.awt.*;
 import java.util.ArrayList;
-import java.awt.Point;
 
 public class Central {
     private List<CarParking> carParkings;
     private List<Request> requests;
     private List<Car> cars;
     private Workshop workshop;
+    private double epsilon;
+    private double dec;
+    private int total = 1000;
+    private int carsDown = 0;
+    private int satisfiedClients = 0;
+    private int unsatisfiedClients = 0;
+    private int giveAwayCarParking = 0;
+    private int totalRequest = 0;
+    private double meanWaitingTime = 0;
 
     public Central(List<CarParking> carParkings, List<Car> cars, Workshop workshop){
         this.carParkings = carParkings;
@@ -25,6 +33,10 @@ public class Central {
     public void setCars(List<Car> cars){
     	this.cars = cars;
     }
+
+    public void setEpsilon(double epsilon){
+        this.epsilon = epsilon;
+    }
     
     public List<Request> getRequests(){
         return this.requests;
@@ -37,6 +49,15 @@ public class Central {
 
     public Workshop getWorkshop(){
         return this.workshop;
+    }
+    
+    public List<CarParking> getCarParkings(){
+        return this.carParkings;
+    }
+    
+    public CarParking getCarParking(CarParking park){
+        int index = this.carParkings.indexOf(park);
+        return this.carParkings.get(index);
     }
     
     public void pushRequest(Request r) {
@@ -52,18 +73,15 @@ public class Central {
     }
 
 
-    public void setCarParkingOccupied(CarParking park){
+    public void setCarParkingOccupied(CarParking park, boolean bool){
         int index = this.carParkings.indexOf(park);
-        this.carParkings.get(index).changeOccupied();
+        this.carParkings.get(index).changeOccupied(bool);
     }
-<<<<<<< HEAD
     
     public void setCarParkingHasArrived(CarParking park, boolean bool){
         int index = this.carParkings.indexOf(park);
         this.carParkings.get(index).setHasArrived(bool);
     }
-=======
->>>>>>> parent of eba18df (hhh)
 
     public List<CarParking> getAvailableCarParkings(){
         List<CarParking> carParkingsAvailable = new ArrayList<>();
@@ -81,13 +99,59 @@ public class Central {
 
     public void changeWorkshopOccupied(){
         this.workshop.changeOccupied();
+        if(this.workshop.isOccupied()) carsDown++;
     }
 
     public int numberOfcars(){
         return cars.size();
     }
 
-    public void sendThreshold(long threshold){
-
+    public int getCarsDown(){
+        return this.carsDown;
     }
+
+    public int getSatisfiedClients(){
+        return this.satisfiedClients;
+    }
+
+
+    public int getUnsatisfiedClients(){
+        return this.unsatisfiedClients;
+    }
+
+    public int getGiveAwayCarParking(){
+        return this.giveAwayCarParking;
+    }
+
+    public void increSatisfiedClients(){
+        this.satisfiedClients++;
+    }
+
+    public void increUnsatisfiedClients(){
+        this.unsatisfiedClients++;
+    }
+
+    public void giveAwayCarParking(){
+        this.giveAwayCarParking++;
+    }
+
+    public void updateWaitTime(int stepRequest){
+        int difference = Board.getStepCounter() - stepRequest;
+        this.meanWaitingTime = (this.meanWaitingTime * this.totalRequest + difference) / (this.totalRequest + 1);
+        this.totalRequest++;
+    }
+
+    public double getMeanWaitTime(){
+        return this.meanWaitingTime;
+    }
+
+    public void updateEpsilon(){
+        dec = (epsilon-0.1)/total;
+		if(epsilon - dec > 0.05) epsilon -= dec;
+    }
+
+    public double getEpsilon(){
+        return this.epsilon;
+    }
+
 }

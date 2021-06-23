@@ -6,6 +6,12 @@ import java.util.ArrayList;
 import java.util.List;
 import rentAcar.Block.Shape;
 import java.util.*;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Calendar;
 
 public class Board {
 
@@ -22,6 +28,20 @@ public class Board {
 	private static List<CarParking> carParkings;
 	private static List<Client> clients;
 	private static Workshop workshop;
+	private static int stepCounter = 1;
+	private static int initialThreshold = -1;
+	public enum CarsBehavior {Conservative, Risky}
+	private static CarsBehavior carsBehavior;
+
+
+	//statistic variables
+	private static FileWriter csvWriter;
+	private static String CURRENTDIRECTORY = System.getProperty("/Users/pedromd/Desktop/AASMA-project");
+    private static File LOGSDIRECTORY = new File(CURRENTDIRECTORY, "logs");
+	private static int lastCarsDown;
+	private static int lastSatisfiedClients;
+	private static int lastUnsatisfiedClients;
+	private static double lastMeanWaitTime;
 
 	private static Random rand = new Random();
  
@@ -36,10 +56,10 @@ public class Board {
 		/** A: create car parkings*/
 
 		carParkings = new ArrayList<CarParking>();
-		carParkings.add(new CarParking(new Point(4,10), Color.blue));
-		carParkings.add(new CarParking(new Point(5,10), Color.blue));
-		carParkings.add(new CarParking(new Point(10,4), Color.blue));
-		carParkings.add(new CarParking(new Point(10,5), Color.blue));		
+		carParkings.add(new CarParking(new Point(4,10), Shape.carParking, Color.blue));
+		carParkings.add(new CarParking(new Point(5,10), Shape.carParking, Color.blue));
+		carParkings.add(new CarParking(new Point(10,4), Shape.carParking, Color.blue));
+		carParkings.add(new CarParking(new Point(10,5), Shape.carParking, Color.blue));		
 
 
 		/** B: create cars*/
@@ -80,13 +100,41 @@ public class Board {
 		
 		for(CarParking c: carParkings){
 			board[c.point.x][c.point.y] = new Block(Shape.carParking, c.color);
-			objects[c.point.x][c.point.y]= c;
 		} 
 		for(Car c : cars){
 			objects[c.point.x][c.point.y]=c;
 		}
 		//workshop
 		board[workshop.location.x][workshop.location.y] = new Block(Shape.workshop, Color.gray);
+
+		if (!LOGSDIRECTORY.exists()){
+            LOGSDIRECTORY.mkdir();
+		}
+		//creating csv
+		try{
+			String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(Calendar.getInstance().getTime());
+			String filename = timeStamp + ".csv";
+
+			csvWriter = new FileWriter(LOGSDIRECTORY + "/" + filename, true);
+			csvWriter.append("Step");
+			csvWriter.append(";");
+			csvWriter.append("Nr of cars that battery ran out");
+			csvWriter.append(";");
+			csvWriter.append("Satisfied clients");
+			csvWriter.append(";");
+			csvWriter.append("Unsatisfied clients");
+			csvWriter.append(";");
+			csvWriter.append("Learned battery threshold");
+			csvWriter.append(";");
+			csvWriter.append("Nr of times parking has been given up");
+			csvWriter.append(";");
+			csvWriter.append("Mean waiting time for clients");
+			csvWriter.append("\n");
+
+		} catch(Exception e){
+			e.printStackTrace();
+		}
+
 	}
 	
 	/****************************
@@ -100,9 +148,6 @@ public class Board {
 		return board[point.x][point.y];
 	}
 	public static void updateEntityPosition(Point point, Point newpoint) {
-		if(objects[point.x][point.y] instanceof Client){
-			System.out.println("DO TIPO CLIENTE");
-		}
 		objects[newpoint.x][newpoint.y] = objects[point.x][point.y];
 		objects[point.x][point.y] = null;
 	}	
@@ -139,6 +184,7 @@ public class Board {
 				}
 	    	}
 	    }
+
 	}
 	
 	public static void run(int time) {
@@ -152,15 +198,10 @@ public class Board {
 		GUI.displayBoard();
 		displayObjects();	
 		GUI.update();
+		stepCounter = 0;
+		initialThreshold = -1;
 	}
-
-	public static void sendMessage(Point point, Shape shape, Color color, boolean free) {
-		for(Car a : cars) a.receiveMessage(point, shape, color, free);		
-	}
-
-	public static void sendMessage(Action action, Point pt) {
-		for(Car a : cars) a.receiveMessage(action, pt);		
-	}
+	
 	
 	public static void step() {
 		removeObjects();
@@ -169,21 +210,14 @@ public class Board {
 			if(rand.nextBoolean()){
 				int x = rand.nextInt(15);
 				int y = rand.nextInt(15);
-				if( board[x][y].shape.equals(Shape.free) && getEntity(new Point(x,y)) == null){
-					Request request = new Request(20, new Point(x,y));
+				Point pointRandom = new Point(x,y);
+				int travelDistance = (rand.nextInt(5) + 1) * 10;
+				if( board[x][y].shape.equals(Shape.free) && getEntity(pointRandom) == null){
+					Request request = new Request(travelDistance, pointRandom, stepCounter);
 					central.pushRequest(request);
-					Client client = new Client(new Point(x,y), Color.BLACK, request);
+					Client client = new Client(pointRandom, Color.BLACK, request);
 					clients.add(client);
 					objects[x][y] = client;
-
-					System.out.println("OBJECTS");
-					for(int i = 0; i < objects[0].length; i++){
-						for(int j = 0; j < objects[1].length;j++){
-							if(objects[i][j] != null){
-								System.out.println(i + " " + j);
-							}
-						}
-					} 
 				}
 			}
 		}
@@ -191,12 +225,50 @@ public class Board {
 		
 		for(Car c : cars){
 			c.getRequest();
-			c.agentReactiveDecision();
-		} 
+			c.agentDecision();
+		}
 
 		displayObjects();
 		GUI.update();
+	
+		
+
+		if(stepCounter % 100 == 1) logData();
+		if(stepCounter == 50001) stop();
+		
+		stepCounter++;
 	}
+
+	public static void logData(){
+
+		List<List<String>> dataLines = new ArrayList<>();
+		dataLines.add(Arrays.asList(
+				String.valueOf(stepCounter - 1),
+				String.valueOf(getCarsDown()),
+				String.valueOf(getSatisfiedClients()),
+				String.valueOf(getUnsatisfiedClients()),
+				String.valueOf(getThreshold()),
+				String.valueOf(getGiveAwayCarParking()),
+				String.format("%.2f", getMeanWaitTime())));
+
+
+		try {
+			for (List<String> rowData : dataLines) {
+				csvWriter.append(String.join(";",  rowData));
+				csvWriter.append("\n");
+			}
+
+			csvWriter.flush();
+
+		} catch(IOException e) {
+			e.printStackTrace();
+		}
+		/*
+		lastCarsDown = getCarsDown();
+		lastSatisfiedClients = getSatisfiedClients();
+		lastUnsatisfiedClients = getUnsatisfiedClients();*/
+	}
+
 
 	public static void stop() {
 		runThread.interrupt();
@@ -205,13 +277,13 @@ public class Board {
 
 	public static void displayObjects(){
 		for(Car c : cars) GUI.displayObject(c);
-		for(CarParking c : carParkings) GUI.displayObject(c);
 		for(Client c: clients) GUI.displayObject(c);
+
+
 	}
 	
 	public static void removeObjects(){
 		for(Car c : cars) GUI.removeObject(c);
-		for(CarParking c : carParkings) GUI.removeObject(c);
 		for(Client c : clients) GUI.removeObject(c);
 	}
 	
@@ -226,7 +298,67 @@ public class Board {
 	
 	public static void removeClient(Entity entity) {
 		clients.remove(entity);
+		//GUI.removeObject(entity);
+	}
+
+	public static int getStepCounter(){
+		return stepCounter;
+	}
+
+	public static void setInitialThreshold(int threshold){
+		
+		for(Car car: cars) car.setThreshold(threshold);
+		initialThreshold = threshold;
+
+	}
+
+	public static int getInitialThreshold(){
+		return initialThreshold;
+	}
+
+	public static int getCarsDown(){
+		return central.getCarsDown();
+	}
+
+	public static int getSatisfiedClients(){
+		return central.getSatisfiedClients();
+	}
+
+	public static int getUnsatisfiedClients(){
+		return central.getUnsatisfiedClients();
+	}
+
+	public static long getThreshold(){
+		return cars.get(0).threshold;
+	}
+
+	public static int getGiveAwayCarParking(){
+		return central.getGiveAwayCarParking();
+	}
+
+	public static double getMeanWaitTime(){
+		return central.getMeanWaitTime();
+	}
+
+	public static void removeObject(Entity entity){
 		GUI.removeObject(entity);
+	}
+
+	public static void displayObject(Entity entity){
+		GUI.displayObject(entity);
+	}
+
+	public static void setCarsBehavior(CarsBehavior behavior){
+		if(behavior.equals(CarsBehavior.Conservative)){
+			for(Car car: cars) car.setThreshold(100); 
+			central.setEpsilon(-1);
+			carsBehavior = CarsBehavior.Conservative;
+		}
+		else if(behavior.equals(CarsBehavior.Risky)){
+			for(Car car: cars) car.setThreshold(initialThreshold);
+			central.setEpsilon(0.9);
+			carsBehavior = CarsBehavior.Risky;
+		}
 	}
 
 }
